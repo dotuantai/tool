@@ -1,0 +1,149 @@
+[
+  {
+    "id": 1,
+    "word": "afraid",
+    "meaning": "e sợ",
+    "pronunciation": "/əˈfreɪd/",
+    "memory_tip": "A phải chạy → gặp ma nên e sợ."
+  },
+  {
+    "id": 2,
+    "word": "ashamed",
+    "meaning": "hổ thẹn",
+    "pronunciation": "/əˈʃeɪmd/",
+    "memory_tip": "A shame = thật đáng xấu hổ."
+  },
+  {
+    "id": 3,
+    "word": "bored",
+    "meaning": "chán nản",
+    "pronunciation": "/bɔːrd/",
+    "memory_tip": "Bored → 'buồn' nên chán nản."
+  },
+  {
+    "id": 4,
+    "word": "calm",
+    "meaning": "bình tĩnh",
+    "pronunciation": "/kɑːm/",
+    "memory_tip": "Calm → cam → ngồi cam chịu, giữ bình tĩnh."
+  },
+  {
+    "id": 5,
+    "word": "cheerful",
+    "meaning": "vui tươi",
+    "pronunciation": "/ˈtʃɪəfl/",
+    "memory_tip": "Cheer → cổ vũ → vui tươi."
+  },
+  {
+    "id": 6,
+    "word": "confused",
+    "meaning": "bối rối",
+    "pronunciation": "/kənˈfjuːzd/",
+    "memory_tip": "Confuse → không phân biệt được → bối rối."
+  },
+  {
+    "id": 7,
+    "word": "curious",
+    "meaning": "tò mò",
+    "pronunciation": "/ˈkjʊəriəs/",
+    "memory_tip": "Curious → cứ rình xem → tò mò."
+  },
+  {
+    "id": 8,
+    "word": "disappointed",
+    "meaning": "thất vọng",
+    "pronunciation": "/ˌdɪsəˈpɔɪntɪd/",
+    "memory_tip": "Đi sai 'point' → thất vọng."
+  },
+  {
+    "id": 9,
+    "word": "embarrassed",
+    "meaning": "xấu hổ",
+    "pronunciation": "/ɪmˈbærəst/",
+    "memory_tip": "Bị mọi người nhìn → xấu hổ."
+  },
+  {
+    "id": 10,
+    "word": "excited",
+    "meaning": "háo hức",
+    "pronunciation": "/ɪkˈsaɪtɪd/",
+    "memory_tip": "Excite → kích thích → háo hức."
+  },
+  {
+    "id": 11,
+    "word": "frustrated",
+    "meaning": "bực bội",
+    "pronunciation": "/frʌˈstreɪtɪd/",
+    "memory_tip": "Làm mãi không được → bực bội."
+  },
+  {
+    "id": 12,
+    "word": "grateful",
+    "meaning": "biết ơn",
+    "pronunciation": "/ˈɡreɪtfl/",
+    "memory_tip": "Great + thankful → biết ơn."
+  },
+  {
+    "id": 13,
+    "word": "hopeful",
+    "meaning": "đầy hy vọng",
+    "pronunciation": "/ˈhəʊpfl/",
+    "memory_tip": "Hope → hy vọng."
+  },
+  {
+    "id": 14,
+    "word": "jealous",
+    "meaning": "ghen tị",
+    "pronunciation": "/ˈdʒeləs/",
+    "memory_tip": "Jealous → thấy người khác hơn mình → ghen tị."
+  },
+  {
+    "id": 15,
+    "word": "nervous",
+    "meaning": "lo lắng",
+    "pronunciation": "/ˈnɜːvəs/",
+    "memory_tip": "Thi cử làm ai cũng nervous."
+  },
+  {
+    "id": 16,
+    "word": "proud",
+    "meaning": "tự hào",
+    "pronunciation": "/praʊd/",
+    "memory_tip": "Đạt thành tích → tự hào."
+  },
+  {
+    "id": 17,
+    "word": "scared",
+    "meaning": "sợ hãi",
+    "pronunciation": "/skeəd/",
+    "memory_tip": "Scare = hù dọa → sợ hãi."
+  },
+  {
+    "id": 18,
+    "word": "sleepy",
+    "meaning": "buồn ngủ",
+    "pronunciation": "/ˈsliːpi/",
+    "memory_tip": "Sleep → ngủ → buồn ngủ."
+  },
+  {
+    "id": 19,
+    "word": "thankful",
+    "meaning": "cảm kích",
+    "pronunciation": "/ˈθæŋkfl/",
+    "memory_tip": "Thank → cảm ơn → cảm kích."
+  },
+  {
+    "id": 20,
+    "word": "tired",
+    "meaning": "mệt mỏi",
+    "pronunciation": "/ˈtaɪəd/",
+    "memory_tip": "Làm việc cả ngày → mệt mỏi."
+  },
+  {
+    "id": 21,
+    "word": "worried",
+    "meaning": "lo ngại",
+    "pronunciation": "/ˈwʌrid/",
+    "memory_tip": "Worry → lo lắng → lo ngại."
+  }
+]
