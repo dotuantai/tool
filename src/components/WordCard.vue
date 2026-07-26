@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { watch } from 'vue'
 import { speakWord } from '@/utils/speakWord'
 
-defineProps<{
+const props = defineProps<{
   word: string
   pronunciation: string
   questionNumber: number
@@ -11,6 +12,15 @@ defineProps<{
 function onSpeak(word: string) {
   speakWord(word)
 }
+
+// Auto-speak whenever a new word appears
+watch(
+  () => props.word,
+  (word) => {
+    if (word) speakWord(word)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
