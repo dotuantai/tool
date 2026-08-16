@@ -1,38 +1,10 @@
 /** Speaks a Japanese hiragana character with authentic Japanese pronunciation.
- *
- * Priority order:
- *  1. Google Translate TTS (authentic Japanese, no install needed)
- *  2. Web Speech API with a Japanese voice (if one is installed on the OS)
- *  3. English TTS reading the romaji (last resort)
+ * Works across Chrome, Brave, Edge, Safari, Firefox.
  */
 
 import { speakWord } from '@/utils/speakWord'
 
-// ─── Google Translate TTS (audio element, bypasses CORS) ─────────────────────
-
-function playGoogleTTS(word: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    // Use client=gtx — this is the same client used by the Google Translate
-    // web widget and works reliably as a media request (no CORS block).
-    const url =
-      `https://translate.googleapis.com/translate_tts` +
-      `?ie=UTF-8&tl=ja&client=gtx&q=${encodeURIComponent(word)}`
-
-    const audio = new Audio(url)
-
-    // Resolve true as soon as the browser can start playing
-    audio.addEventListener('canplaythrough', () => {
-      audio.play().then(() => resolve(true)).catch(() => resolve(false))
-    }, { once: true })
-
-    audio.addEventListener('error', () => resolve(false), { once: true })
-
-    // Give up after 3 s if the network is too slow or the URL is blocked
-    setTimeout(() => resolve(false), 3000)
-  })
-}
-
-// ─── Web Speech API helpers ───────────────────────────────────────────────────
+let cachedJapaneseVoice: SpeechSynthesisVoice | null = null
 
 function pickJapaneseVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
   const japanese = voices.filter((v) => v.lang.toLowerCase().startsWith('ja'))
@@ -48,54 +20,48 @@ function pickJapaneseVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice
   return [...japanese].sort((a, b) => score(a) - score(b))[0] ?? null
 }
 
-function ensureVoicesLoaded(): Promise<SpeechSynthesisVoice[]> {
-  const existing = window.speechSynthesis.getVoices()
-  if (existing.length > 0) return Promise.resolve(existing)
-
-  return new Promise((resolve) => {
-    const handler = () => {
-      window.speechSynthesis.removeEventListener('voiceschanged', handler)
-      resolve(window.speechSynthesis.getVoices())
-    }
-    window.speechSynthesis.addEventListener('voiceschanged', handler)
-    setTimeout(() => {
-      window.speechSynthesis.removeEventListener('voiceschanged', handler)
-      resolve(window.speechSynthesis.getVoices())
-    }, 600)
-  })
+function refreshCache() {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return
+  const voices = window.speechSynthesis.getVoices()
+  cachedJapaneseVoice = pickJapaneseVoice(voices)
 }
 
-function speakWithJapaneseVoice(character: string, voice: SpeechSynthesisVoice): void {
-  window.speechSynthesis.cancel()
-  const utterance = new SpeechSynthesisUtterance(character)
-  utterance.lang = voice.lang
-  utterance.rate = 0.85
-  utterance.voice = voice
-  window.speechSynthesis.speak(utterance)
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  window.speechSynthesis.addEventListener('voiceschanged', refreshCache)
+  refreshCache()
 }
-
-// ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Speak a hiragana character in authentic Japanese.
- * @param character  The hiragana character, e.g. "あ"
- * @param romaji     Romaji fallback, e.g. "a" — used only as last resort
+ * Speaks a hiragana character using the best available Japanese audio source.
  */
-export async function speakJapaneseWord(character: string, romaji: string): Promise<void> {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return
+export function speakJapaneseWord(character: string, romaji: string): void {
+  if (typeof window === 'undefined') return
 
-  // 1. Try Google TTS first — gives authentic Japanese pronunciation on any device
-  const googleOk = await playGoogleTTS(character)
-  if (googleOk) return
+  refreshCache()
 
-  // 2. Fall back to system Japanese voice if available
-  const voices = await ensureVoicesLoaded()
-  const japaneseVoice = pickJapaneseVoice(voices)
-  if (japaneseVoice) {
-    speakWithJapaneseVoice(character, japaneseVoice)
+  // 1. If browser/OS has a Japanese voice (like Chrome natively has), use it!
+  if (cachedJapaneseVoice && window.speechSynthesis) {
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(character)
+    utterance.lang = cachedJapaneseVoice.lang
+    utterance.rate = 0.85
+    utterance.voice = cachedJapaneseVoice
+    window.speechSynthesis.speak(utterance)
     return
   }
 
-  // 3. Last resort: English TTS reading the romaji
-  speakWord(romaji)
+  // 2. Fallback for browsers like Brave that block Google cloud voices:
+  // Use online Japanese Dictionary audio API (Youdao JP voice) which is NOT blocked by Brave Shields
+  const dictionaryAudioUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(character)}&le=jap`
+  const audio = new Audio(dictionaryAudioUrl)
+
+  audio.play().catch(() => {
+    // 3. Secondary fallback: Google Translate TTS
+    const googleUrl = `https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=ja&client=gtx&q=${encodeURIComponent(character)}`
+    const gAudio = new Audio(googleUrl)
+    gAudio.play().catch(() => {
+      // 4. Final fallback: English speech synthesis reading romaji
+      speakWord(romaji)
+    })
+  })
 }
