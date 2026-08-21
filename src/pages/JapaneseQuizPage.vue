@@ -42,10 +42,10 @@ function getRangeData(range: WordRange): HiraganaCharacter[] {
   }
 }
 
-function buildOptions(item: HiraganaCharacter, mode: 'char-to-romaji' | 'romaji-to-char'): string[] {
+function buildOptions(item: HiraganaCharacter, mode: 'char-to-romaji' | 'romaji-to-char', pool: HiraganaCharacter[]): string[] {
   const correct = mode === 'char-to-romaji' ? item.romaji : item.character
-  const pool = hiraganaData.filter(h => h.character !== item.character)
-  const shuffledPool = shuffle(pool)
+  const filteredPool = pool.filter(h => h.character !== item.character)
+  const shuffledPool = shuffle(filteredPool)
   const distractors = shuffledPool.slice(0, 3).map(h =>
     mode === 'char-to-romaji' ? h.romaji : h.character
   )
@@ -57,12 +57,12 @@ function resolveMode(selected: QuizMode): 'char-to-romaji' | 'romaji-to-char' {
   return selected
 }
 
-function makeQuestion(item: HiraganaCharacter, selected: QuizMode): HiraQuestion {
+function makeQuestion(item: HiraganaCharacter, selected: QuizMode, pool: HiraganaCharacter[]): HiraQuestion {
   const mode = resolveMode(selected)
   return {
     item,
     mode,
-    options: buildOptions(item, mode),
+    options: buildOptions(item, mode, pool),
     correct: mode === 'char-to-romaji' ? item.romaji : item.character,
   }
 }
@@ -70,7 +70,7 @@ function makeQuestion(item: HiraganaCharacter, selected: QuizMode): HiraQuestion
 function buildQuiz(selectedMode: QuizMode, selectedRange: WordRange, selectedOrder: WordOrder): HiraQuestion[] {
   const baseList = getRangeData(selectedRange)
   const list = selectedOrder === 'shuffle' ? shuffle(baseList) : [...baseList]
-  return list.map(item => makeQuestion(item, selectedMode))
+  return list.map(item => makeQuestion(item, selectedMode, baseList))
 }
 
 // ── State ────────────────────────────────────────────────────────────────────
