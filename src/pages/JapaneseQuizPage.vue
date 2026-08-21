@@ -813,15 +813,26 @@ startQuiz()
   cursor: not-allowed;
 }
 
-/* ── Feedback Panel ── */
+/* ── Feedback Panel (Fixed Bottom Sheet) ── */
 .feedback-panel {
-  margin-top: 0.2rem;
-  padding-top: 0.75rem;
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  padding: 1.25rem 1.25rem calc(var(--sab, env(safe-area-inset-bottom)) + 1.25rem);
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid rgba(226, 232, 240, 0.8);
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+  box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.1);
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  gap: 1rem;
+  z-index: 100;
 }
 
 .feedback-status {
@@ -984,9 +995,16 @@ startQuiz()
 .card-enter-from { opacity: 0; transform: translateY(12px) scale(0.98); }
 .card-leave-to   { opacity: 0; transform: translateY(-8px) scale(0.98); }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+.feedback-enter-active, .feedback-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.feedback-enter-from, .feedback-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 100%);
+}
+.feedback-enter-to {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 @keyframes fadeUp {
