@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { QuizScore } from '@/types/vocabulary'
 
-defineProps<{
+const props = defineProps<{
   score: QuizScore
   total: number
 }>()
@@ -9,41 +10,56 @@ defineProps<{
 const emit = defineEmits<{
   restart: []
 }>()
+
+const accuracy = computed(() => {
+  const done = props.score.correct + props.score.incorrect
+  return done === 0 ? 0 : Math.round((props.score.correct / done) * 100)
+})
 </script>
 
 <template>
   <div
-    class="animate-[fadeIn_0.4s_ease-out] rounded-3xl bg-[var(--color-surface)] p-8 text-center shadow-[0_12px_40px_rgba(26,46,53,0.08)] sm:p-10"
+    class="animate-[fadeUp_0.4s_ease-out] rounded-3xl ios-card p-6 sm:p-8 text-center"
   >
     <div
-      class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-teal-50 text-3xl"
+      class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-teal-50 text-3xl shadow-sm"
     >
-      ✨
+      {{ accuracy >= 80 ? '🎉' : accuracy >= 50 ? '🌟' : '💪' }}
     </div>
 
-    <h2 class="font-['Source_Serif_4',serif] text-3xl font-bold text-[var(--color-ink)] sm:text-4xl">
-      Hoàn thành!
+    <h2 class="font-['Source_Serif_4',serif] text-2xl sm:text-3xl font-extrabold text-[var(--color-ink)]">
+      {{ accuracy >= 80 ? 'Xuất Sắc!' : accuracy >= 50 ? 'Hoàn Thành Tốt!' : 'Cố Gắng Lần Sau!' }}
     </h2>
 
-    <div class="mt-8 grid grid-cols-2 gap-4">
-      <div class="rounded-2xl bg-emerald-50 px-4 py-5">
-        <p class="text-sm font-semibold text-emerald-700">Đúng</p>
-        <p class="mt-1 text-3xl font-extrabold text-[var(--color-correct)]">{{ score.correct }}</p>
+    <p class="mt-1 text-xs sm:text-sm font-medium text-slate-500">
+      Đã hoàn thành toàn bộ {{ total }} câu hỏi từ vựng
+    </p>
+
+    <div class="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
+      <div class="rounded-2xl bg-emerald-50/90 border border-emerald-100 p-3 sm:p-4 text-center">
+        <p class="text-2xl font-black text-emerald-600">{{ score.correct }}</p>
+        <p class="text-[0.65rem] font-extrabold uppercase tracking-wider text-emerald-700 mt-0.5">Đúng</p>
       </div>
-      <div class="rounded-2xl bg-red-50 px-4 py-5">
-        <p class="text-sm font-semibold text-red-700">Sai</p>
-        <p class="mt-1 text-3xl font-extrabold text-[var(--color-wrong)]">{{ score.incorrect }}</p>
+      <div class="rounded-2xl bg-rose-50/90 border border-rose-100 p-3 sm:p-4 text-center">
+        <p class="text-2xl font-black text-rose-600">{{ score.incorrect }}</p>
+        <p class="text-[0.65rem] font-extrabold uppercase tracking-wider text-rose-700 mt-0.5">Sai</p>
+      </div>
+      <div class="rounded-2xl bg-teal-50/90 border border-teal-100 p-3 sm:p-4 text-center">
+        <p class="text-2xl font-black text-teal-600">{{ accuracy }}%</p>
+        <p class="text-[0.65rem] font-extrabold uppercase tracking-wider text-teal-700 mt-0.5">Tỉ lệ</p>
       </div>
     </div>
-
-    <p class="mt-4 text-sm text-[var(--color-muted)]">Tổng {{ total }} từ</p>
 
     <button
       type="button"
-      class="mt-8 w-full rounded-2xl bg-[var(--color-accent)] px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-teal-700 hover:shadow-md active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2"
+      class="mt-6 w-full min-h-[52px] rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 px-6 py-3.5 text-base font-extrabold text-white shadow-lg shadow-teal-500/25 transition-all ios-pressable flex items-center justify-center gap-2"
       @click="emit('restart')"
     >
-      Làm lại
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+      </svg>
+      Làm lại từ vựng
     </button>
   </div>
 </template>
+

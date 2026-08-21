@@ -13,7 +13,6 @@ function onSpeak(word: string) {
   speakWord(word)
 }
 
-// Auto-speak whenever a new word appears
 watch(
   () => props.word,
   (word) => {
@@ -25,25 +24,24 @@ watch(
 
 <template>
   <div class="text-center">
-    <h2
-      class="font-['Source_Serif_4',serif] text-4xl font-bold tracking-tight text-[var(--color-ink)] sm:text-5xl"
-    >
+    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-xs font-bold text-slate-500 mb-2">
+      <span>Từ vựng #{{ questionNumber }}</span>
+    </div>
+
+    <h2 class="font-['Source_Serif_4',serif] text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--color-ink)]">
       {{ word }}
     </h2>
 
-    <p class="mt-2 text-base text-[var(--color-muted)]">{{ pronunciation }}</p>
+    <p class="mt-1 text-sm sm:text-base font-semibold text-slate-400 tracking-wide font-mono">{{ pronunciation }}</p>
 
     <button
       type="button"
-      class="mt-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 text-2xl text-[var(--color-accent)] transition hover:bg-teal-100 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+      class="mt-3.5 inline-flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 border border-teal-100 text-teal-600 text-xl shadow-sm transition-all hover:bg-teal-100 active:scale-95"
       :aria-label="`Phát âm từ ${word}`"
       @click="onSpeak(word)"
     >
       🔊
     </button>
-
-    <p class="mt-4 text-sm font-semibold text-[var(--color-muted)]">
-      Câu {{ questionNumber }} / {{ total }}
-    </p>
   </div>
 </template>
+

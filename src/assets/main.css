@@ -1,47 +1,86 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap');
 @import 'tailwindcss';
 
 :root {
-  --color-ink: #1a2e35;
-  --color-muted: #5a717a;
+  --color-ink: #0f172a;
+  --color-muted: #64748b;
   --color-surface: #ffffff;
   --color-accent: #0d9488;
   --color-accent-soft: #ccfbf1;
   --color-correct: #059669;
   --color-correct-bg: #ecfdf5;
-  --color-wrong: #dc2626;
-  --color-wrong-bg: #fef2f2;
-  --color-page-from: #e8f6f3;
-  --color-page-via: #f0f7fa;
-  --color-page-to: #eef4f8;
+  --color-wrong: #e11d48;
+  --color-wrong-bg: #fff1f2;
+  --color-page-from: #f0fdf4;
+  --color-page-via: #f0f9ff;
+  --color-page-to: #faf5ff;
+  
+  /* Safe Area Insets for iPhone 14 Pro / Dynamic Island */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
 }
 
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 html,
 body,
 #app {
   min-height: 100%;
+  min-height: -webkit-fill-available;
 }
 
 body {
   margin: 0;
-  font-family: 'Nunito', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--color-ink);
   background:
-    radial-gradient(ellipse 80% 50% at 20% -10%, #b8ebe3 0%, transparent 55%),
-    radial-gradient(ellipse 70% 40% at 90% 10%, #c5dff0 0%, transparent 50%),
-    linear-gradient(165deg, var(--color-page-from), var(--color-page-via), var(--color-page-to));
+    radial-gradient(ellipse 90% 60% at 10% -5%, #cffafe 0%, transparent 60%),
+    radial-gradient(ellipse 80% 50% at 90% 15%, #fce7f3 0%, transparent 55%),
+    linear-gradient(175deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  touch-action: manipulation;
+  overscroll-behavior-y: none;
 }
 
 #app {
-  max-width: none;
+  max-width: 100%;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
 }
+
+/* Utilities for iOS buttons & cards */
+.ios-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.06), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+}
+
+.ios-pressable {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ios-pressable:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+

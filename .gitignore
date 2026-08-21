@@ -18,11 +18,13 @@ coverage
 .vscode/*
 !.vscode/extensions.json
 .idea
+.vs
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
 
 *.tsbuildinfo
 
