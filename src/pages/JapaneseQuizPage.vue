@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { hiraganaData, type HiraganaCharacter } from '@/data/hiragana'
+import { speakJapaneseWord } from '@/utils/speakJapanese'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type QuizMode = 'char-to-romaji' | 'romaji-to-char' | 'random'
+type WordRange = 'all' | 'first15' | 'mid15' | 'last16'
+type WordOrder = 'ordered' | 'shuffle'
 type AnswerState = 'idle' | 'correct' | 'incorrect'
 
 interface HiraQuestion {
@@ -15,21 +18,35 @@ interface HiraQuestion {
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 function shuffle<T>(arr: T[]): T[] {
-  for (let i = arr.length - 1; i > 0; i--) {
+  const result = [...arr]
+  for (let i = result.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    const temp = arr[i]!
-    arr[i] = arr[j]!
-    arr[j] = temp
+    const temp = result[i]!
+    result[i] = result[j]!
+    result[j] = temp
   }
-  return arr
+  return result
 }
 
+function getRangeData(range: WordRange): HiraganaCharacter[] {
+  switch (range) {
+    case 'first15':
+      return hiraganaData.slice(0, 15) // 15 từ đầu: あ -> そ
+    case 'mid15':
+      return hiraganaData.slice(15, 30) // 15 từ giữa: た -> ほ
+    case 'last16':
+      return hiraganaData.slice(30, 46) // 16 từ cuối: ま -> ん
+    case 'all':
+    default:
+      return hiraganaData // Tất cả 46 từ
+  }
+}
 
 function buildOptions(item: HiraganaCharacter, mode: 'char-to-romaji' | 'romaji-to-char'): string[] {
   const correct = mode === 'char-to-romaji' ? item.romaji : item.character
   const pool = hiraganaData.filter(h => h.character !== item.character)
-  shuffle(pool)
-  const distractors = pool.slice(0, 3).map(h =>
+  const shuffledPool = shuffle(pool)
+  const distractors = shuffledPool.slice(0, 3).map(h =>
     mode === 'char-to-romaji' ? h.romaji : h.character
   )
   return shuffle([correct, ...distractors])
@@ -50,12 +67,17 @@ function makeQuestion(item: HiraganaCharacter, selected: QuizMode): HiraQuestion
   }
 }
 
-function buildQuiz(selected: QuizMode): HiraQuestion[] {
-  return shuffle([...hiraganaData]).map(item => makeQuestion(item, selected))
+function buildQuiz(selectedMode: QuizMode, selectedRange: WordRange, selectedOrder: WordOrder): HiraQuestion[] {
+  const baseList = getRangeData(selectedRange)
+  const list = selectedOrder === 'shuffle' ? shuffle(baseList) : [...baseList]
+  return list.map(item => makeQuestion(item, selectedMode))
 }
 
 // ── State ────────────────────────────────────────────────────────────────────
 const quizMode    = ref<QuizMode>('random')
+const wordRange   = ref<WordRange>('all')
+const wordOrder   = ref<WordOrder>('ordered')
+
 const quizOrder   = ref<HiraQuestion[]>([])
 const currentIdx  = ref(0)
 const answerState = ref<AnswerState>('idle')
@@ -64,10 +86,22 @@ const score       = ref({ correct: 0, incorrect: 0 })
 const isFinished  = ref(false)
 const cardKey     = ref(0)
 
+const rangeOptions: { value: WordRange; label: string; sub: string }[] = [
+  { value: 'all',     label: 'Tất cả 46', sub: 'あ - ん' },
+  { value: 'first15', label: '15 từ đầu', sub: 'あ - そ' },
+  { value: 'mid15',   label: '15 từ giữa', sub: 'た - ほ' },
+  { value: 'last16',  label: '16 từ cuối', sub: 'ま - ん' },
+]
+
+const orderOptions: { value: WordOrder; label: string; icon: string }[] = [
+  { value: 'ordered', label: 'Theo thứ tự', icon: '📋' },
+  { value: 'shuffle', label: 'Xáo trộn',   icon: '🔀' },
+]
+
 const modeOptions: { value: QuizMode; label: string; icon: string }[] = [
   { value: 'char-to-romaji', label: 'あ → Romaji', icon: '🇯🇵' },
   { value: 'romaji-to-char', label: 'Romaji → あ', icon: '🇻🇳' },
-  { value: 'random',         label: 'Lộn xộn',     icon: '🔀' },
+  { value: 'random',         label: 'Lộn xộn',     icon: '🎲' },
 ]
 
 // ── Derived ──────────────────────────────────────────────────────────────────
@@ -84,7 +118,7 @@ const accuracy = computed(() => {
 
 // ── Actions ──────────────────────────────────────────────────────────────────
 function startQuiz() {
-  quizOrder.value   = buildQuiz(quizMode.value)
+  quizOrder.value   = buildQuiz(quizMode.value, wordRange.value, wordOrder.value)
   currentIdx.value  = 0
   answerState.value = 'idle'
   selected.value    = null
@@ -99,12 +133,31 @@ function onModeChange(mode: QuizMode) {
   startQuiz()
 }
 
+function onRangeChange(range: WordRange) {
+  if (wordRange.value === range) return
+  wordRange.value = range
+  startQuiz()
+}
+
+function onOrderChange(order: WordOrder) {
+  if (wordOrder.value === order) return
+  wordOrder.value = order
+  startQuiz()
+}
+
+function playAudio() {
+  if (!question.value) return
+  speakJapaneseWord(question.value.item.character, question.value.item.romaji)
+}
+
 function onSelect(option: string) {
   if (answerState.value !== 'idle' || !question.value) return
   selected.value = option
   if (option === question.value.correct) {
     answerState.value = 'correct'
     score.value = { ...score.value, correct: score.value.correct + 1 }
+    // Phát âm chuẩn khi trả lời đúng
+    playAudio()
   } else {
     answerState.value = 'incorrect'
     score.value = { ...score.value, incorrect: score.value.incorrect + 1 }
@@ -146,19 +199,73 @@ startQuiz()
       </div>
     </div>
 
-    <!-- Mode Selector (iOS Segmented Control) -->
-    <div class="segmented-control">
-      <button
-        v-for="opt in modeOptions"
-        :key="opt.value"
-        type="button"
-        class="segment-tab"
-        :class="{ 'segment-active': quizMode === opt.value }"
-        @click="onModeChange(opt.value)"
-      >
-        <span class="segment-icon">{{ opt.icon }}</span>
-        <span class="segment-text">{{ opt.label }}</span>
-      </button>
+    <!-- Filter & Control Section -->
+    <div class="controls-card ios-card">
+      <!-- 1. Phạm vi chọn từ (15 đầu / 15 giữa / 16 cuối / Tất cả) -->
+      <div class="control-group">
+        <div class="control-label-row">
+          <span class="control-label-icon">🎯</span>
+          <span class="control-label-text">Chọn phần học:</span>
+        </div>
+        <div class="range-grid">
+          <button
+            v-for="opt in rangeOptions"
+            :key="opt.value"
+            type="button"
+            class="range-btn ios-pressable"
+            :class="{ 'range-active': wordRange === opt.value }"
+            @click="onRangeChange(opt.value)"
+          >
+            <span class="range-btn-title">{{ opt.label }}</span>
+            <span class="range-btn-sub">{{ opt.sub }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="control-divider"></div>
+
+      <!-- 2. Sắp xếp từ & Kiểu trắc nghiệm -->
+      <div class="control-sub-row">
+        <!-- Thứ tự từ: Theo thứ tự / Xáo trộn -->
+        <div class="mini-control-group">
+          <div class="mini-label">
+            <span>Sắp xếp từ:</span>
+          </div>
+          <div class="order-segmented">
+            <button
+              v-for="ord in orderOptions"
+              :key="ord.value"
+              type="button"
+              class="order-tab"
+              :class="{ 'order-tab-active': wordOrder === ord.value }"
+              @click="onOrderChange(ord.value)"
+            >
+              <span>{{ ord.icon }}</span>
+              <span>{{ ord.label }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Chế độ trắc nghiệm -->
+        <div class="mini-control-group">
+          <div class="mini-label">
+            <span>Kiểu câu hỏi:</span>
+          </div>
+          <div class="mode-segmented">
+            <button
+              v-for="opt in modeOptions"
+              :key="opt.value"
+              type="button"
+              class="mode-tab"
+              :class="{ 'mode-tab-active': quizMode === opt.value }"
+              @click="onModeChange(opt.value)"
+            >
+              <span class="mode-icon">{{ opt.icon }}</span>
+              <span class="mode-text">{{ opt.label }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Progress Line -->
@@ -176,7 +283,12 @@ startQuiz()
       <h2 class="result-headline">
         {{ accuracy >= 80 ? 'Xuất Sắc!' : accuracy >= 50 ? 'Làm Tốt Lắm!' : 'Cố Gắng Thêm Nhé!' }}
       </h2>
-      <p class="result-desc">Bạn đã hoàn thành {{ total }} ký tự Hiragana</p>
+      <p class="result-desc">
+        Bạn đã hoàn thành {{ total }} ký tự Hiragana
+        <span v-if="wordRange === 'first15'">(15 từ đầu)</span>
+        <span v-else-if="wordRange === 'mid15'">(15 từ giữa)</span>
+        <span v-else-if="wordRange === 'last16'">(16 từ cuối)</span>
+      </p>
 
       <div class="stats-row">
         <div class="stat-pill correct-pill">
@@ -193,32 +305,45 @@ startQuiz()
         </div>
       </div>
 
-      <button class="primary-btn restart-action ios-pressable" @click="startQuiz">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-        </svg>
-        Luyện Tập Lại
-      </button>
+      <div class="result-actions">
+        <button class="primary-btn restart-action ios-pressable" @click="startQuiz">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+          </svg>
+          Luyện Tập Lại
+        </button>
+      </div>
     </div>
 
     <!-- QUESTION CARD -->
     <Transition v-else-if="question" name="card" mode="out-in">
       <div :key="cardKey" class="quiz-card ios-card">
-        <!-- Question Header Badge -->
+        <!-- Question Header Badge & Audio button -->
         <div class="card-top-info">
           <span class="direction-badge" :class="question.mode === 'char-to-romaji' ? 'dir-char' : 'dir-roma'">
             {{ question.mode === 'char-to-romaji' ? '🇯🇵 Nhìn chữ → Chọn Romaji' : '🇻🇳 Nhìn Romaji → Chọn chữ' }}
           </span>
+          <button
+            type="button"
+            class="mini-audio-btn ios-pressable"
+            @click="playAudio"
+            title="Nghe phát âm"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+            </svg>
+          </button>
         </div>
 
         <!-- Big Prompt Display -->
-        <div class="prompt-box">
+        <div class="prompt-box" @click="playAudio" title="Chạm để nghe âm thanh">
           <span
             class="main-prompt"
             :class="question.mode === 'char-to-romaji' ? 'prompt-kana' : 'prompt-latin'"
           >
             {{ question.mode === 'char-to-romaji' ? question.item.character : question.item.romaji }}
           </span>
+          <span class="prompt-speaker-hint">🔊 Chạm để nghe</span>
         </div>
 
         <p class="select-hint">Chọn 1 trong 4 đáp án:</p>
@@ -275,10 +400,10 @@ startQuiz()
   min-height: 100dvh;
   max-width: 480px;
   margin: 0 auto;
-  padding: calc(var(--sat) + 0.85rem) 1rem calc(var(--sab) + 1.25rem);
+  padding: calc(var(--sat) + 0.75rem) 0.85rem calc(var(--sab) + 1.25rem);
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.75rem;
   box-sizing: border-box;
 }
 
@@ -337,54 +462,189 @@ startQuiz()
   border: 1px solid rgba(255, 255, 255, 0.9);
 }
 
-/* ── Segmented Control (iOS Style) ── */
-.segmented-control {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  padding: 4px;
-  background: rgba(226, 232, 240, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+/* ── Filter Controls Card ── */
+.controls-card {
+  padding: 0.75rem 0.85rem;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.88);
 }
 
-.segment-tab {
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.control-label-row {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.3rem;
-  padding: 0.55rem 0.25rem;
-  border: none;
-  background: transparent;
+}
+
+.control-label-icon {
+  font-size: 0.8rem;
+}
+
+.control-label-text {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Range grid (4 buttons) */
+.range-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.range-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.2rem;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
   border-radius: 12px;
   cursor: pointer;
   font-family: inherit;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
   -webkit-user-select: none;
 }
 
-.segment-icon {
-  font-size: 0.8rem;
+.range-btn-title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #334155;
+  white-space: nowrap;
 }
 
-.segment-text {
-  font-size: 0.72rem;
+.range-btn-sub {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+
+.range-active {
+  background: linear-gradient(145deg, #7e22ce 0%, #9333ea 100%);
+  border-color: #7e22ce;
+  box-shadow: 0 3px 8px rgba(126, 34, 206, 0.25);
+}
+
+.range-active .range-btn-title {
+  color: #ffffff;
+}
+
+.range-active .range-btn-sub {
+  color: #f3e8ff;
+}
+
+.control-divider {
+  height: 1px;
+  background: rgba(226, 232, 240, 0.7);
+  margin: 0.1rem 0;
+}
+
+/* Sub-row for Order & Mode */
+.control-sub-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mini-control-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.mini-label {
+  font-size: 0.7rem;
   font-weight: 700;
   color: #64748b;
   white-space: nowrap;
 }
 
-.segment-active {
-  background: #ffffff;
-  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+/* Order Segmented */
+.order-segmented {
+  display: flex;
+  gap: 4px;
+  background: rgba(241, 245, 249, 0.95);
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
 }
 
-.segment-active .segment-text {
+.order-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.55rem;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748b;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.order-tab-active {
+  background: #ffffff;
   color: #7e22ce;
   font-weight: 800;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+/* Mode Segmented */
+.mode-segmented {
+  display: flex;
+  gap: 4px;
+  background: rgba(241, 245, 249, 0.95);
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.mode-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.3rem 0.45rem;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #64748b;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.mode-icon {
+  font-size: 0.72rem;
+}
+
+.mode-tab-active {
+  background: #ffffff;
+  color: #7e22ce;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
 }
 
 /* ── Progress Line ── */
@@ -409,23 +669,24 @@ startQuiz()
 /* ── Question Card ── */
 .quiz-card {
   border-radius: 28px;
-  padding: 1.5rem 1.25rem 1.25rem;
+  padding: 1.25rem 1.15rem 1.15rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.85rem;
   position: relative;
   overflow: hidden;
 }
 
 .card-top-info {
   display: flex;
-  justify-content: center;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .direction-badge {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  padding: 0.3rem 0.85rem;
+  padding: 0.3rem 0.75rem;
   border-radius: 999px;
   letter-spacing: 0.02em;
 }
@@ -442,17 +703,32 @@ startQuiz()
   border: 1px solid #dbeafe;
 }
 
+.mini-audio-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #7e22ce;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
 /* ── Big Prompt Box ── */
 .prompt-box {
   background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
   border-radius: 20px;
   border: 1px solid rgba(226, 232, 240, 0.8);
-  padding: 1.25rem 0.5rem;
+  padding: 1.15rem 0.5rem 0.65rem;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 130px;
+  min-height: 120px;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+  cursor: pointer;
 }
 
 .main-prompt {
@@ -460,8 +736,15 @@ startQuiz()
   font-weight: 900;
 }
 
+.prompt-speaker-hint {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-top: 0.4rem;
+}
+
 .prompt-kana {
-  font-size: clamp(4.5rem, 18vw, 5.5rem);
+  font-size: clamp(4.25rem, 16vw, 5.25rem);
   font-family: 'M PLUS Rounded 1c', sans-serif;
   background: linear-gradient(145deg, #6b21a8 0%, #a855f7 100%);
   -webkit-background-clip: text;
@@ -469,13 +752,13 @@ startQuiz()
 }
 
 .prompt-latin {
-  font-size: clamp(2.5rem, 10vw, 3.25rem);
+  font-size: clamp(2.25rem, 9vw, 3rem);
   letter-spacing: 0.05em;
   color: #1e40af;
 }
 
 .select-hint {
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--color-muted);
   text-align: center;
@@ -486,13 +769,13 @@ startQuiz()
 .options-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.65rem;
+  gap: 0.6rem;
 }
 
 .choice-btn {
-  min-height: 56px;
-  padding: 0.75rem 0.5rem;
-  border-radius: 18px;
+  min-height: 52px;
+  padding: 0.65rem 0.5rem;
+  border-radius: 16px;
   border: 2px solid #e2e8f0;
   background: #ffffff;
   font-family: inherit;
@@ -508,7 +791,7 @@ startQuiz()
 
 .choice-kana {
   font-family: 'M PLUS Rounded 1c', sans-serif;
-  font-size: 1.65rem;
+  font-size: 1.55rem;
 }
 
 .choice-correct {
@@ -532,12 +815,12 @@ startQuiz()
 
 /* ── Feedback Panel ── */
 .feedback-panel {
-  margin-top: 0.25rem;
-  padding-top: 0.85rem;
+  margin-top: 0.2rem;
+  padding-top: 0.75rem;
   border-top: 1px solid rgba(226, 232, 240, 0.8);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -548,8 +831,8 @@ startQuiz()
 }
 
 .status-icon-correct {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: #10b981;
   color: #ffffff;
@@ -562,8 +845,8 @@ startQuiz()
 }
 
 .status-icon-wrong {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: #f43f5e;
   color: #ffffff;
@@ -581,7 +864,7 @@ startQuiz()
 
 .status-title {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 800;
 }
 
@@ -595,7 +878,7 @@ startQuiz()
 
 .highlight-ans {
   font-family: 'M PLUS Rounded 1c', sans-serif;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   background: #f1f5f9;
   padding: 0.1rem 0.4rem;
   border-radius: 6px;
@@ -605,13 +888,13 @@ startQuiz()
 /* ── Action Buttons ── */
 .primary-btn {
   width: 100%;
-  min-height: 52px;
-  border-radius: 18px;
+  min-height: 48px;
+  border-radius: 16px;
   border: none;
   background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
   color: #ffffff;
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 800;
   cursor: pointer;
   display: flex;
@@ -624,7 +907,7 @@ startQuiz()
 /* ── Result Box ── */
 .result-box {
   border-radius: 28px;
-  padding: 2.25rem 1.5rem;
+  padding: 2rem 1.25rem;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -634,7 +917,7 @@ startQuiz()
 }
 
 .result-sparkle {
-  font-size: 3.5rem;
+  font-size: 3.25rem;
   line-height: 1;
 }
 
@@ -660,7 +943,7 @@ startQuiz()
 }
 
 .stat-pill {
-  padding: 0.85rem 0.35rem;
+  padding: 0.75rem 0.25rem;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
@@ -673,7 +956,7 @@ startQuiz()
 .acc-pill { background: #faf5ff; }
 
 .stat-digit {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 900;
   color: var(--color-ink);
   line-height: 1;
@@ -686,8 +969,12 @@ startQuiz()
   text-transform: uppercase;
 }
 
+.result-actions {
+  width: 100%;
+}
+
 .restart-action {
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 /* ── Animations ── */
