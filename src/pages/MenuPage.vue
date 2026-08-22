@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 // MenuPage — Optimized for iPhone 14 Pro & Modern Mobile
 </script>
 
@@ -60,20 +60,20 @@
         </div>
       </a>
 
-      <!-- 3. Flashcard Hiragana Card -->
-      <a href="#/hiragana" class="mode-item flashcard-theme">
+      <!-- 3. Trắc nghiệm Katakana Card -->
+      <a href="#/katakana-quiz" class="mode-item kata-theme">
         <div class="item-left">
-          <div class="icon-avatar hira-avatar">
-            <span class="hira-char">あ</span>
+          <div class="icon-avatar kata-avatar">
+            <span class="kata-char">ア</span>
           </div>
         </div>
         <div class="item-content">
           <div class="item-meta">
-            <span class="category-tag hira-tag">TIẾNG NHẬT</span>
-            <span class="type-pill">Có âm thanh</span>
+            <span class="category-tag kata-tag">TIẾNG NHẬT</span>
+            <span class="type-pill">46 Ký tự</span>
           </div>
-          <h2 class="item-title">Bảng Chữ Cái & Phát Âm</h2>
-          <p class="item-desc">Flashcard nhận diện mặt chữ kèm giọng đọc bản xứ.</p>
+          <h2 class="item-title">Trắc Nghiệm Katakana</h2>
+          <p class="item-desc">Đoán chữ ↔ Romaji với 3 chế độ xáo trộn linh hoạt.</p>
         </div>
         <div class="item-arrow">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
@@ -137,6 +137,7 @@
   letter-spacing: 0.04em;
   background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -219,8 +220,8 @@
   background: linear-gradient(140deg, #f3e8ff 0%, #e9d5ff 100%);
 }
 
-.hira-avatar {
-  background: linear-gradient(140deg, #ffe4e6 0%, #fecdd3 100%);
+.kata-avatar {
+  background: linear-gradient(140deg, #cffafe 0%, #a5f3fc 100%);
 }
 
 .jp-kanji {
@@ -230,11 +231,11 @@
   color: #7e22ce;
 }
 
-.hira-char {
+.kata-char {
   font-family: 'M PLUS Rounded 1c', sans-serif;
   font-size: 2rem;
   font-weight: 900;
-  color: #e11d48;
+  color: #0e7490;
 }
 
 /* ── Content ── */
@@ -268,9 +269,9 @@
   color: #7e22ce;
 }
 
-.hira-tag {
-  background: #fff1f2;
-  color: #be123c;
+.kata-tag {
+  background: #ecfeff;
+  color: #0e7490;
 }
 
 .type-pill {
@@ -297,6 +298,7 @@
   line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -324,7 +326,7 @@
 /* Specific theme highlights on active */
 .english-theme:active { border-color: #93c5fd; }
 .quiz-theme:active { border-color: #d8b4fe; }
-.flashcard-theme:active { border-color: #fda4af; }
+.kata-theme:active { border-color: #67e8f9; }
 
 /* ── Footer ── */
 .menu-footer {

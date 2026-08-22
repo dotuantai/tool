@@ -50,14 +50,17 @@ function ensureVoicesLoaded(): Promise<SpeechSynthesisVoice[]> {
 }
 
 function speakWithVoice(word: string, lang: string, voice: SpeechSynthesisVoice | null): void {
-  window.speechSynthesis.cancel()
+  const synth = window.speechSynthesis
+  synth.cancel()
+  // Fix Chrome bug: SpeechSynthesis bị freeze khi tab không active một lúc
+  synth.resume()
 
   const utterance = new SpeechSynthesisUtterance(word)
   utterance.lang = voice?.lang || lang
   utterance.rate = 0.9
   if (voice) utterance.voice = voice
 
-  window.speechSynthesis.speak(utterance)
+  synth.speak(utterance)
 }
 
 export function speakWord(word: string, lang = 'en-US'): void {

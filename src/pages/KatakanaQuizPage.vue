@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { hiraganaData, type HiraganaCharacter } from '@/data/hiragana'
+import { katakanaData, type KatakanaCharacter } from '@/data/katakana'
 import { speakJapaneseWord } from '@/utils/speakJapanese'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -9,8 +9,8 @@ type WordRange = 'all' | 'first15' | 'mid15' | 'last16'
 type WordOrder = 'ordered' | 'shuffle'
 type AnswerState = 'idle' | 'correct' | 'incorrect'
 
-interface HiraQuestion {
-  item: HiraganaCharacter
+interface KataQuestion {
+  item: KatakanaCharacter
   mode: 'char-to-romaji' | 'romaji-to-char'
   options: string[]
   correct: string
@@ -28,26 +28,26 @@ function shuffle<T>(arr: T[]): T[] {
   return result
 }
 
-function getRangeData(range: WordRange): HiraganaCharacter[] {
+function getRangeData(range: WordRange): KatakanaCharacter[] {
   switch (range) {
     case 'first15':
-      return hiraganaData.slice(0, 15) // 15 từ đầu: あ -> そ
+      return katakanaData.slice(0, 15) // ア → ソ
     case 'mid15':
-      return hiraganaData.slice(15, 30) // 15 từ giữa: た -> ほ
+      return katakanaData.slice(15, 30) // タ → ホ
     case 'last16':
-      return hiraganaData.slice(30, 46) // 16 từ cuối: ま -> ん
+      return katakanaData.slice(30, 46) // マ → ン
     case 'all':
     default:
-      return hiraganaData // Tất cả 46 từ
+      return katakanaData
   }
 }
 
-function buildOptions(item: HiraganaCharacter, mode: 'char-to-romaji' | 'romaji-to-char', pool: HiraganaCharacter[]): string[] {
+function buildOptions(item: KatakanaCharacter, mode: 'char-to-romaji' | 'romaji-to-char', pool: KatakanaCharacter[]): string[] {
   const correct = mode === 'char-to-romaji' ? item.romaji : item.character
-  const filteredPool = pool.filter(h => h.character !== item.character)
+  const filteredPool = pool.filter(k => k.character !== item.character)
   const shuffledPool = shuffle(filteredPool)
-  const distractors = shuffledPool.slice(0, 3).map(h =>
-    mode === 'char-to-romaji' ? h.romaji : h.character
+  const distractors = shuffledPool.slice(0, 3).map(k =>
+    mode === 'char-to-romaji' ? k.romaji : k.character
   )
   return shuffle([correct, ...distractors])
 }
@@ -57,7 +57,7 @@ function resolveMode(selected: QuizMode): 'char-to-romaji' | 'romaji-to-char' {
   return selected
 }
 
-function makeQuestion(item: HiraganaCharacter, selected: QuizMode, pool: HiraganaCharacter[]): HiraQuestion {
+function makeQuestion(item: KatakanaCharacter, selected: QuizMode, pool: KatakanaCharacter[]): KataQuestion {
   const mode = resolveMode(selected)
   return {
     item,
@@ -67,7 +67,7 @@ function makeQuestion(item: HiraganaCharacter, selected: QuizMode, pool: Hiragan
   }
 }
 
-function buildQuiz(selectedMode: QuizMode, selectedRange: WordRange, selectedOrder: WordOrder): HiraQuestion[] {
+function buildQuiz(selectedMode: QuizMode, selectedRange: WordRange, selectedOrder: WordOrder): KataQuestion[] {
   const baseList = getRangeData(selectedRange)
   const list = selectedOrder === 'shuffle' ? shuffle(baseList) : [...baseList]
   return list.map(item => makeQuestion(item, selectedMode, baseList))
@@ -78,7 +78,7 @@ const quizMode    = ref<QuizMode>('random')
 const wordRange   = ref<WordRange>('all')
 const wordOrder   = ref<WordOrder>('ordered')
 
-const quizOrder   = ref<HiraQuestion[]>([])
+const quizOrder   = ref<KataQuestion[]>([])
 const currentIdx  = ref(0)
 const answerState = ref<AnswerState>('idle')
 const selected    = ref<string | null>(null)
@@ -87,10 +87,10 @@ const isFinished  = ref(false)
 const cardKey     = ref(0)
 
 const rangeOptions: { value: WordRange; label: string; sub: string }[] = [
-  { value: 'all',     label: 'Tất cả 46', sub: 'あ - ん' },
-  { value: 'first15', label: '15 từ đầu', sub: 'あ - そ' },
-  { value: 'mid15',   label: '15 từ giữa', sub: 'た - ほ' },
-  { value: 'last16',  label: '16 từ cuối', sub: 'ま - ん' },
+  { value: 'all',     label: 'Tất cả 46', sub: 'ア - ン' },
+  { value: 'first15', label: '15 từ đầu', sub: 'ア - ソ' },
+  { value: 'mid15',   label: '15 từ giữa', sub: 'タ - ホ' },
+  { value: 'last16',  label: '16 từ cuối', sub: 'マ - ン' },
 ]
 
 const orderOptions: { value: WordOrder; label: string; icon: string }[] = [
@@ -99,8 +99,8 @@ const orderOptions: { value: WordOrder; label: string; icon: string }[] = [
 ]
 
 const modeOptions: { value: QuizMode; label: string; icon: string }[] = [
-  { value: 'char-to-romaji', label: 'あ → Romaji', icon: '🇯🇵' },
-  { value: 'romaji-to-char', label: 'Romaji → あ', icon: '🇻🇳' },
+  { value: 'char-to-romaji', label: 'ア → Romaji', icon: '🇯🇵' },
+  { value: 'romaji-to-char', label: 'Romaji → ア', icon: '🇻🇳' },
   { value: 'random',         label: 'Lộn xộn',     icon: '🎲' },
 ]
 
@@ -156,7 +156,6 @@ function onSelect(option: string) {
   if (option === question.value.correct) {
     answerState.value = 'correct'
     score.value = { ...score.value, correct: score.value.correct + 1 }
-    // Phát âm chuẩn khi trả lời đúng
     playAudio()
   } else {
     answerState.value = 'incorrect'
@@ -191,7 +190,7 @@ startQuiz()
 
       <div class="quiz-title-badge">
         <span class="badge-dot"></span>
-        <span>Hiragana Quiz</span>
+        <span>Katakana Quiz</span>
       </div>
 
       <div class="counter-badge">
@@ -201,7 +200,7 @@ startQuiz()
 
     <!-- Filter & Control Section -->
     <div class="controls-card ios-card">
-      <!-- 1. Phạm vi chọn từ (15 đầu / 15 giữa / 16 cuối / Tất cả) -->
+      <!-- 1. Phạm vi chọn từ -->
       <div class="control-group">
         <div class="control-label-row">
           <span class="control-label-icon">🎯</span>
@@ -226,7 +225,7 @@ startQuiz()
 
       <!-- 2. Sắp xếp từ & Kiểu trắc nghiệm -->
       <div class="control-sub-row">
-        <!-- Thứ tự từ: Theo thứ tự / Xáo trộn -->
+        <!-- Thứ tự từ -->
         <div class="mini-control-group">
           <div class="mini-label">
             <span>Sắp xếp từ:</span>
@@ -284,7 +283,7 @@ startQuiz()
         {{ accuracy >= 80 ? 'Xuất Sắc!' : accuracy >= 50 ? 'Làm Tốt Lắm!' : 'Cố Gắng Thêm Nhé!' }}
       </h2>
       <p class="result-desc">
-        Bạn đã hoàn thành {{ total }} ký tự Hiragana
+        Bạn đã hoàn thành {{ total }} ký tự Katakana
         <span v-if="wordRange === 'first15'">(15 từ đầu)</span>
         <span v-else-if="wordRange === 'mid15'">(15 từ giữa)</span>
         <span v-else-if="wordRange === 'last16'">(16 từ cuối)</span>
@@ -432,24 +431,25 @@ startQuiz()
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
+/* Katakana quiz — màu cyan/teal để phân biệt với Hiragana (tím) */
 .quiz-title-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   font-size: 0.78rem;
   font-weight: 800;
-  color: #7e22ce;
-  background: rgba(250, 245, 255, 0.8);
+  color: #0e7490;
+  background: rgba(236, 254, 255, 0.85);
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
-  border: 1px solid rgba(233, 213, 255, 0.8);
+  border: 1px solid rgba(165, 243, 252, 0.8);
 }
 
 .badge-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #a855f7;
+  background: #06b6d4;
 }
 
 .counter-badge {
@@ -533,10 +533,11 @@ startQuiz()
   margin-top: 1px;
 }
 
+/* Katakana range-active — teal thay vì tím */
 .range-active {
-  background: linear-gradient(145deg, #7e22ce 0%, #9333ea 100%);
-  border-color: #7e22ce;
-  box-shadow: 0 3px 8px rgba(126, 34, 206, 0.25);
+  background: linear-gradient(145deg, #0e7490 0%, #06b6d4 100%);
+  border-color: #0e7490;
+  box-shadow: 0 3px 8px rgba(14, 116, 144, 0.28);
 }
 
 .range-active .range-btn-title {
@@ -544,7 +545,7 @@ startQuiz()
 }
 
 .range-active .range-btn-sub {
-  color: #f3e8ff;
+  color: #cffafe;
 }
 
 .control-divider {
@@ -603,7 +604,7 @@ startQuiz()
 
 .order-tab-active {
   background: #ffffff;
-  color: #7e22ce;
+  color: #0e7490;
   font-weight: 800;
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
 }
@@ -642,7 +643,7 @@ startQuiz()
 
 .mode-tab-active {
   background: #ffffff;
-  color: #7e22ce;
+  color: #0e7490;
   font-weight: 800;
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
 }
@@ -662,7 +663,8 @@ startQuiz()
 .progress-line-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #9333ea, #ec4899);
+  /* Katakana: teal → sky gradient */
+  background: linear-gradient(90deg, #0e7490, #38bdf8);
   transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -692,9 +694,9 @@ startQuiz()
 }
 
 .dir-char {
-  background: #faf5ff;
-  color: #7e22ce;
-  border: 1px solid #f3e8ff;
+  background: #ecfeff;
+  color: #0e7490;
+  border: 1px solid #a5f3fc;
 }
 
 .dir-roma {
@@ -709,7 +711,7 @@ startQuiz()
   border-radius: 50%;
   border: 1px solid #e2e8f0;
   background: #f8fafc;
-  color: #7e22ce;
+  color: #0e7490;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -743,10 +745,11 @@ startQuiz()
   margin-top: 0.4rem;
 }
 
+/* Katakana prompt — teal gradient thay vì tím */
 .prompt-kana {
   font-size: clamp(4.25rem, 16vw, 5.25rem);
   font-family: 'M PLUS Rounded 1c', sans-serif;
-  background: linear-gradient(145deg, #6b21a8 0%, #a855f7 100%);
+  background: linear-gradient(145deg, #0e7490 0%, #06b6d4 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -799,41 +802,29 @@ startQuiz()
   background: #ecfdf5 !important;
   border-color: #10b981 !important;
   color: #047857 !important;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15) !important;
 }
 
 .choice-wrong {
-  background: #fff1f2 !important;
-  border-color: #f43f5e !important;
-  color: #be123c !important;
-  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.15) !important;
+  background: #fef2f2 !important;
+  border-color: #ef4444 !important;
+  color: #b91c1c !important;
 }
 
 .choice-dimmed {
-  opacity: 0.35;
-  cursor: not-allowed;
+  opacity: 0.4;
 }
 
-/* ── Feedback Panel (Fixed Bottom Sheet) ── */
+/* ── Feedback Panel ── */
 .feedback-panel {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  padding: 1.25rem 1.25rem calc(var(--sab, env(safe-area-inset-bottom)) + 1.25rem);
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(226, 232, 240, 0.8);
-  border-top-left-radius: 28px;
-  border-top-right-radius: 28px;
-  box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.1);
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  z-index: 100;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1.5px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
 }
 
 .feedback-status {
@@ -843,132 +834,121 @@ startQuiz()
 }
 
 .status-icon-correct {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: #10b981;
-  color: #ffffff;
+  background: #dcfce7;
+  color: #15803d;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 0.9rem;
   font-weight: 900;
-  font-size: 0.85rem;
   flex-shrink: 0;
 }
 
 .status-icon-wrong {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: #f43f5e;
-  color: #ffffff;
+  background: #fee2e2;
+  color: #dc2626;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 0.9rem;
   font-weight: 900;
-  font-size: 0.85rem;
   flex-shrink: 0;
 }
 
-.status-text {
-  flex: 1;
-}
+.status-text { display: flex; flex-direction: column; }
 
 .status-title {
-  margin: 0;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 800;
+  margin: 0;
+  line-height: 1.2;
 }
 
-.correct-title {
-  color: #047857;
-}
-
-.wrong-title {
-  color: #be123c;
-}
+.correct-title { color: #15803d; }
+.wrong-title   { color: #dc2626; }
 
 .highlight-ans {
   font-family: 'M PLUS Rounded 1c', sans-serif;
-  font-size: 1.05rem;
-  background: #f1f5f9;
-  padding: 0.1rem 0.4rem;
-  border-radius: 6px;
-  color: var(--color-ink);
+  font-size: 1rem;
+  color: #0e7490;
 }
 
-/* ── Action Buttons ── */
+/* ── Buttons ── */
 .primary-btn {
-  width: 100%;
-  min-height: 48px;
-  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.15rem;
   border: none;
-  background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
-  color: #ffffff;
+  border-radius: 14px;
   font-family: inherit;
-  font-size: 0.92rem;
+  font-size: 0.85rem;
   font-weight: 800;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  box-shadow: 0 6px 20px rgba(147, 51, 234, 0.35);
+  white-space: nowrap;
+  background: linear-gradient(135deg, #0e7490 0%, #06b6d4 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
 }
 
-/* ── Result Box ── */
+/* ── Result Screen ── */
 .result-box {
   border-radius: 28px;
-  padding: 2rem 1.25rem;
-  text-align: center;
+  padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  animation: fadeUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  text-align: center;
 }
 
 .result-sparkle {
-  font-size: 3.25rem;
+  font-size: 3.5rem;
   line-height: 1;
 }
 
 .result-headline {
-  font-family: 'Source Serif 4', serif;
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 1.6rem;
+  font-weight: 900;
   color: var(--color-ink);
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .result-desc {
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: var(--color-muted);
-  margin: -0.5rem 0 0.25rem;
+  margin: 0;
+  font-weight: 500;
 }
 
 .stats-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-  width: 100%;
+  display: flex;
+  gap: 0.6rem;
 }
 
 .stat-pill {
-  padding: 0.75rem 0.25rem;
-  border-radius: 16px;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 0.75rem 0.5rem;
+  border-radius: 16px;
   gap: 0.15rem;
 }
 
-.correct-pill { background: #ecfdf5; }
-.incorrect-pill { background: #fff1f2; }
-.acc-pill { background: #faf5ff; }
+.correct-pill  { background: #ecfdf5; border: 1.5px solid #a7f3d0; }
+.incorrect-pill{ background: #fef2f2; border: 1.5px solid #fecaca; }
+.acc-pill      { background: #ecfeff; border: 1.5px solid #a5f3fc; }
 
 .stat-digit {
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   font-weight: 900;
   color: var(--color-ink);
   line-height: 1;
@@ -976,40 +956,62 @@ startQuiz()
 
 .stat-tag {
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--color-muted);
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.result-actions {
-  width: 100%;
-}
+.result-actions { width: 100%; }
 
 .restart-action {
-  margin-top: 0.25rem;
+  width: 100%;
+  justify-content: center;
+  padding: 0.85rem;
+  font-size: 0.95rem;
+  border-radius: 18px;
 }
 
-/* ── Animations ── */
-.card-enter-active, .card-leave-active {
-  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+/* ── Card Transition ── */
+.card-enter-active,
+.card-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
-.card-enter-from { opacity: 0; transform: translateY(12px) scale(0.98); }
-.card-leave-to   { opacity: 0; transform: translateY(-8px) scale(0.98); }
-
-.feedback-enter-active, .feedback-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.feedback-enter-from, .feedback-leave-to {
+.card-enter-from {
   opacity: 0;
-  transform: translate(-50%, 100%);
+  transform: translateX(24px);
 }
-.feedback-enter-to {
-  opacity: 1;
-  transform: translate(-50%, 0);
+.card-leave-to {
+  opacity: 0;
+  transform: translateX(-24px);
 }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* ── Feedback Transition ── */
+.feedback-enter-active,
+.feedback-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.feedback-enter-from,
+.feedback-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+/* ── iOS Pressable ── */
+.ios-pressable {
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+.ios-pressable:active {
+  transform: scale(0.95);
+  opacity: 0.85;
+}
+
+/* ── iOS Card ── */
+.ios-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.06), 0 2px 8px rgba(15, 23, 42, 0.03);
 }
 </style>

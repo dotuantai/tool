@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import QuizPage from '@/pages/QuizPage.vue'
-import HiraganaPage from '@/pages/HiraganaPage.vue'
+import KatakanaQuizPage from '@/pages/KatakanaQuizPage.vue'
 import MenuPage from '@/pages/MenuPage.vue'
 import JapaneseQuizPage from '@/pages/JapaneseQuizPage.vue'
 
@@ -21,8 +21,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <HiraganaPage    v-if="currentRoute === '#/hiragana'" />
-  <QuizPage        v-else-if="currentRoute === '#/english'" />
-  <JapaneseQuizPage v-else-if="currentRoute === '#/japanese-quiz'" />
-  <MenuPage        v-else />
+  <KatakanaQuizPage  v-if="currentRoute === '#/katakana-quiz'" />
+  <QuizPage          v-else-if="currentRoute === '#/english'" />
+  <JapaneseQuizPage  v-else-if="currentRoute === '#/japanese-quiz'" />
+  <MenuPage          v-else />
 </template>
