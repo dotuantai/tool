@@ -16,7 +16,29 @@
 
     <!-- Cards List -->
     <main class="menu-list">
-      <!-- 1. Tiếng Anh Card -->
+      <!-- 1. Luyện Viết Chữ Nhật Card -->
+      <a href="#/writing" class="mode-item write-theme">
+        <div class="item-left">
+          <div class="icon-avatar write-avatar">
+            <span class="write-icon">✍️</span>
+          </div>
+        </div>
+        <div class="item-content">
+          <div class="item-meta">
+            <span class="category-tag write-tag">LUYỆN VIẾT</span>
+            <span class="type-pill">Hiragana & Katakana</span>
+          </div>
+          <h2 class="item-title">Luyện Viết Chữ Nhật</h2>
+          <p class="item-desc">Tập tô theo mẫu, tự viết nhớ chữ với bảng vẽ cảm ứng & mẹo nét.</p>
+        </div>
+        <div class="item-arrow">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+            <path fill-rule="evenodd" d="M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z" clip-rule="evenodd" />
+          </svg>
+        </div>
+      </a>
+
+      <!-- 2. Tiếng Anh Card -->
       <a href="#/english" class="mode-item english-theme">
         <div class="item-left">
           <div class="icon-avatar en-avatar">
@@ -38,7 +60,7 @@
         </div>
       </a>
 
-      <!-- 2. Trắc nghiệm Hiragana Card -->
+      <!-- 3. Trắc nghiệm Hiragana Card -->
       <a href="#/japanese-quiz" class="mode-item quiz-theme">
         <div class="item-left">
           <div class="icon-avatar jp-avatar">
@@ -60,7 +82,7 @@
         </div>
       </a>
 
-      <!-- 3. Trắc nghiệm Katakana Card -->
+      <!-- 4. Trắc nghiệm Katakana Card -->
       <a href="#/katakana-quiz" class="mode-item kata-theme">
         <div class="item-left">
           <div class="icon-avatar kata-avatar">
@@ -190,9 +212,10 @@
   animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.mode-item:nth-child(1) { animation-delay: 0.08s; }
-.mode-item:nth-child(2) { animation-delay: 0.16s; }
-.mode-item:nth-child(3) { animation-delay: 0.24s; }
+.mode-item:nth-child(1) { animation-delay: 0.06s; }
+.mode-item:nth-child(2) { animation-delay: 0.12s; }
+.mode-item:nth-child(3) { animation-delay: 0.18s; }
+.mode-item:nth-child(4) { animation-delay: 0.24s; }
 
 .mode-item:active {
   transform: scale(0.97);
@@ -210,6 +233,14 @@
   font-size: 1.8rem;
   flex-shrink: 0;
   box-shadow: 0 6px 16px -2px rgba(0, 0, 0, 0.06);
+}
+
+.write-avatar {
+  background: linear-gradient(140deg, #ccfbf1 0%, #a7f3d0 100%);
+}
+
+.write-icon {
+  font-size: 1.75rem;
 }
 
 .en-avatar {
@@ -257,6 +288,11 @@
   letter-spacing: 0.06em;
   padding: 0.15rem 0.45rem;
   border-radius: 6px;
+}
+
+.write-tag {
+  background: #f0fdf4;
+  color: #0d9488;
 }
 
 .en-tag {
@@ -324,6 +360,7 @@
 }
 
 /* Specific theme highlights on active */
+.write-theme:active { border-color: #5eead4; }
 .english-theme:active { border-color: #93c5fd; }
 .quiz-theme:active { border-color: #d8b4fe; }
 .kata-theme:active { border-color: #67e8f9; }
