@@ -60,7 +60,29 @@
         </div>
       </a>
 
-      <!-- 3. Trắc nghiệm Hiragana Card -->
+      <!-- 3. Flashcard Hiragana Card -->
+      <a href="#/hiragana-flashcards" class="mode-item flashcard-theme">
+        <div class="item-left">
+          <div class="icon-avatar flashcard-avatar">
+            <span class="flashcard-char">あ</span>
+          </div>
+        </div>
+        <div class="item-content">
+          <div class="item-meta">
+            <span class="category-tag flashcard-tag">FLASHCARD</span>
+            <span class="type-pill">46 Ký tự</span>
+          </div>
+          <h2 class="item-title">Học Hiragana Với Flashcard</h2>
+          <p class="item-desc">Nhập Romaji để kiểm tra hoặc lật thẻ khi cần xem đáp án.</p>
+        </div>
+        <div class="item-arrow">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+            <path fill-rule="evenodd" d="M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z" clip-rule="evenodd" />
+          </svg>
+        </div>
+      </a>
+
+      <!-- 4. Trắc nghiệm Hiragana Card -->
       <a href="#/japanese-quiz" class="mode-item quiz-theme">
         <div class="item-left">
           <div class="icon-avatar jp-avatar">
@@ -82,7 +104,7 @@
         </div>
       </a>
 
-      <!-- 4. Trắc nghiệm Katakana Card -->
+      <!-- 5. Trắc nghiệm Katakana Card -->
       <a href="#/katakana-quiz" class="mode-item kata-theme">
         <div class="item-left">
           <div class="icon-avatar kata-avatar">
@@ -216,6 +238,7 @@
 .mode-item:nth-child(2) { animation-delay: 0.12s; }
 .mode-item:nth-child(3) { animation-delay: 0.18s; }
 .mode-item:nth-child(4) { animation-delay: 0.24s; }
+.mode-item:nth-child(5) { animation-delay: 0.3s; }
 
 .mode-item:active {
   transform: scale(0.97);
@@ -255,6 +278,10 @@
   background: linear-gradient(140deg, #cffafe 0%, #a5f3fc 100%);
 }
 
+.flashcard-avatar {
+  background: linear-gradient(140deg, #fce7f3 0%, #e9d5ff 100%);
+}
+
 .jp-kanji {
   font-family: 'M PLUS Rounded 1c', sans-serif;
   font-size: 1.85rem;
@@ -267,6 +294,13 @@
   font-size: 2rem;
   font-weight: 900;
   color: #0e7490;
+}
+
+.flashcard-char {
+  font-family: 'M PLUS Rounded 1c', sans-serif;
+  font-size: 2rem;
+  font-weight: 900;
+  color: #9333ea;
 }
 
 /* ── Content ── */
@@ -308,6 +342,11 @@
 .kata-tag {
   background: #ecfeff;
   color: #0e7490;
+}
+
+.flashcard-tag {
+  background: #fdf2f8;
+  color: #be185d;
 }
 
 .type-pill {
@@ -364,6 +403,7 @@
 .english-theme:active { border-color: #93c5fd; }
 .quiz-theme:active { border-color: #d8b4fe; }
 .kata-theme:active { border-color: #67e8f9; }
+.flashcard-theme:active { border-color: #e879f9; }
 
 /* ── Footer ── */
 .menu-footer {

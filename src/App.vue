@@ -5,6 +5,7 @@ import KatakanaQuizPage from '@/pages/KatakanaQuizPage.vue'
 import MenuPage from '@/pages/MenuPage.vue'
 import JapaneseQuizPage from '@/pages/JapaneseQuizPage.vue'
 import WritingPage from '@/pages/WritingPage.vue'
+import HiraganaFlashcardPage from '@/pages/HiraganaFlashcardPage.vue'
 
 const currentRoute = ref(window.location.hash)
 
@@ -23,6 +24,7 @@ onUnmounted(() => {
 
 <template>
   <WritingPage       v-if="currentRoute === '#/writing' || currentRoute === '#/hiragana-writing'" />
+  <HiraganaFlashcardPage v-else-if="currentRoute === '#/hiragana-flashcards'" />
   <KatakanaQuizPage  v-else-if="currentRoute === '#/katakana-quiz'" />
   <QuizPage          v-else-if="currentRoute === '#/english'" />
   <JapaneseQuizPage  v-else-if="currentRoute === '#/japanese-quiz'" />
