@@ -814,17 +814,26 @@ startQuiz()
   opacity: 0.4;
 }
 
-/* ── Feedback Panel ── */
+/* ── Feedback Panel (Fixed Bottom Sheet) ── */
 .feedback-panel {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  padding: 1.25rem 1.25rem calc(var(--sab, env(safe-area-inset-bottom)) + 1.25rem);
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(226, 232, 240, 0.8);
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+  box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.1);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1.5px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  flex-direction: column;
+  gap: 1rem;
+  z-index: 100;
 }
 
 .feedback-status {
@@ -881,20 +890,21 @@ startQuiz()
 
 /* ── Buttons ── */
 .primary-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.65rem 1.15rem;
+  width: 100%;
+  min-height: 48px;
+  border-radius: 16px;
   border: none;
-  border-radius: 14px;
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 800;
-  cursor: pointer;
-  white-space: nowrap;
   background: linear-gradient(135deg, #0e7490 0%, #06b6d4 100%);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  box-shadow: 0 6px 20px rgba(14, 116, 144, 0.35);
 }
 
 /* ── Result Screen ── */
@@ -989,12 +999,16 @@ startQuiz()
 /* ── Feedback Transition ── */
 .feedback-enter-active,
 .feedback-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .feedback-enter-from,
 .feedback-leave-to {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translate(-50%, 100%);
+}
+.feedback-enter-to {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 /* ── iOS Pressable ── */
