@@ -3,7 +3,9 @@ import { computed, nextTick, ref } from 'vue'
 import { hiraganaData, type HiraganaCharacter } from '@/data/hiragana'
 
 type AnswerState = 'idle' | 'correct' | 'incorrect'
+type CardRange = 'all' | 'first15' | 'mid15' | 'last16'
 
+const selectedRange = ref<CardRange>('all')
 const cards = ref<HiraganaCharacter[]>([...hiraganaData])
 const currentIndex = ref(0)
 const isFlipped = ref(false)
@@ -18,6 +20,27 @@ const currentCard = computed<HiraganaCharacter>(() =>
 )
 const progress = computed(() => ((currentIndex.value + 1) / cards.value.length) * 100)
 const normalizedAnswer = computed(() => answer.value.trim().toLowerCase())
+
+const rangeOptions: { value: CardRange; label: string; sub: string }[] = [
+  { value: 'all', label: 'Tất cả 46', sub: 'あ - ん' },
+  { value: 'first15', label: '15 chữ đầu', sub: 'あ - そ' },
+  { value: 'mid15', label: '15 chữ tiếp', sub: 'た - ほ' },
+  { value: 'last16', label: '16 chữ cuối', sub: 'ま - ん' },
+]
+
+function getRangeCards(range: CardRange): HiraganaCharacter[] {
+  switch (range) {
+    case 'first15':
+      return hiraganaData.slice(0, 15)
+    case 'mid15':
+      return hiraganaData.slice(15, 30)
+    case 'last16':
+      return hiraganaData.slice(30, 46)
+    case 'all':
+    default:
+      return hiraganaData
+  }
+}
 
 function resetCard() {
   isFlipped.value = false
@@ -56,6 +79,16 @@ function previousCard() {
   goToCard(currentIndex.value - 1)
 }
 
+function changeRange(range: CardRange) {
+  if (selectedRange.value === range) return
+  selectedRange.value = range
+  cards.value = [...getRangeCards(range)]
+  currentIndex.value = 0
+  correctCount.value = 0
+  checkedCount.value = 0
+  resetCard()
+}
+
 function shuffleCards() {
   const shuffled = [...cards.value]
   for (let index = shuffled.length - 1; index > 0; index -= 1) {
@@ -87,6 +120,20 @@ function shuffleCards() {
         ↝
       </button>
     </header>
+
+    <section class="range-selector ios-card" aria-label="Chọn phần chữ Hiragana">
+      <button
+        v-for="option in rangeOptions"
+        :key="option.value"
+        type="button"
+        class="range-button ios-pressable"
+        :class="{ 'range-active': selectedRange === option.value }"
+        @click="changeRange(option.value)"
+      >
+        <span class="range-title">{{ option.label }}</span>
+        <span class="range-subtitle">{{ option.sub }}</span>
+      </button>
+    </section>
 
     <section class="progress-section" aria-label="Tiến độ học">
       <div class="progress-copy">
@@ -248,6 +295,52 @@ function shuffleCards() {
   height: 6px;
   border-radius: 50%;
   background: #a855f7;
+}
+
+.range-selector {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.3rem;
+  padding: 0.4rem;
+  border-radius: 16px;
+}
+
+.range-button {
+  min-width: 0;
+  padding: 0.42rem 0.15rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.08rem;
+  border: 1.5px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: #475569;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.range-title {
+  font-size: 0.66rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.range-subtitle {
+  color: #94a3b8;
+  font-size: 0.57rem;
+  font-weight: 800;
+}
+
+.range-button.range-active {
+  border-color: #7e22ce;
+  background: linear-gradient(145deg, #7e22ce, #9333ea);
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(126, 34, 206, 0.24);
+}
+
+.range-active .range-subtitle {
+  color: #f3e8ff;
 }
 
 .progress-section {
