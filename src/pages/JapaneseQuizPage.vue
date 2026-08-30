@@ -5,7 +5,7 @@ import { speakJapaneseWord } from '@/utils/speakJapanese'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type QuizMode = 'char-to-romaji' | 'romaji-to-char' | 'random'
-type WordRange = 'all' | 'first15' | 'mid15' | 'last16'
+type WordRange = 'all' | 'first15' | 'mid15' | 'lastFirst8' | 'lastSecond8'
 type WordOrder = 'ordered' | 'shuffle'
 type AnswerState = 'idle' | 'correct' | 'incorrect'
 
@@ -34,8 +34,10 @@ function getRangeData(range: WordRange): HiraganaCharacter[] {
       return hiraganaData.slice(0, 15) // 15 từ đầu: あ -> そ
     case 'mid15':
       return hiraganaData.slice(15, 30) // 15 từ giữa: た -> ほ
-    case 'last16':
-      return hiraganaData.slice(30, 46) // 16 từ cuối: ま -> ん
+    case 'lastFirst8':
+      return hiraganaData.slice(30, 38) // 8 từ đầu của nhóm cuối: ま -> よ
+    case 'lastSecond8':
+      return hiraganaData.slice(38, 46) // 8 từ sau của nhóm cuối: ら -> ん
     case 'all':
     default:
       return hiraganaData // Tất cả 46 từ
@@ -90,7 +92,8 @@ const rangeOptions: { value: WordRange; label: string; sub: string }[] = [
   { value: 'all',     label: 'Tất cả 46', sub: 'あ - ん' },
   { value: 'first15', label: '15 từ đầu', sub: 'あ - そ' },
   { value: 'mid15',   label: '15 từ giữa', sub: 'た - ほ' },
-  { value: 'last16',  label: '16 từ cuối', sub: 'ま - ん' },
+  { value: 'lastFirst8',  label: '8 từ cuối ①', sub: 'ま - よ' },
+  { value: 'lastSecond8', label: '8 từ cuối ②', sub: 'ら - ん' },
 ]
 
 const orderOptions: { value: WordOrder; label: string; icon: string }[] = [
@@ -201,7 +204,7 @@ startQuiz()
 
     <!-- Filter & Control Section -->
     <div class="controls-card ios-card">
-      <!-- 1. Phạm vi chọn từ (15 đầu / 15 giữa / 16 cuối / Tất cả) -->
+      <!-- 1. Phạm vi chọn từ (15 đầu / 15 giữa / hai nhóm 8 cuối / Tất cả) -->
       <div class="control-group">
         <div class="control-label-row">
           <span class="control-label-icon">🎯</span>
@@ -287,7 +290,8 @@ startQuiz()
         Bạn đã hoàn thành {{ total }} ký tự Hiragana
         <span v-if="wordRange === 'first15'">(15 từ đầu)</span>
         <span v-else-if="wordRange === 'mid15'">(15 từ giữa)</span>
-        <span v-else-if="wordRange === 'last16'">(16 từ cuối)</span>
+        <span v-else-if="wordRange === 'lastFirst8'">(8 từ cuối ①)</span>
+        <span v-else-if="wordRange === 'lastSecond8'">(8 từ cuối ②)</span>
       </p>
 
       <div class="stats-row">
@@ -496,14 +500,15 @@ startQuiz()
   letter-spacing: 0.04em;
 }
 
-/* Range grid (4 buttons) */
+/* Range grid (5 buttons) */
 .range-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 4px;
 }
 
 .range-btn {
+  grid-column: span 2;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -517,6 +522,10 @@ startQuiz()
   transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
   -webkit-user-select: none;
+}
+
+.range-btn:nth-child(n + 4) {
+  grid-column: span 3;
 }
 
 .range-btn-title {
