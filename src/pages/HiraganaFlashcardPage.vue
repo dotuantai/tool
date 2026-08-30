@@ -5,8 +5,12 @@ import { hiraganaData, type HiraganaCharacter } from '@/data/hiragana'
 type AnswerState = 'idle' | 'correct' | 'incorrect'
 type CardRange = 'all' | 'first15' | 'mid15' | 'last16'
 
+interface FlashcardItem extends HiraganaCharacter {
+  isReview: boolean
+}
+
 const selectedRange = ref<CardRange>('all')
-const cards = ref<HiraganaCharacter[]>([...hiraganaData])
+const cards = ref<FlashcardItem[]>(hiraganaData.map(item => ({ ...item, isReview: false })))
 const currentIndex = ref(0)
 const isFlipped = ref(false)
 const answer = ref('')
@@ -15,8 +19,8 @@ const correctCount = ref(0)
 const checkedCount = ref(0)
 const answerInput = ref<HTMLInputElement | null>(null)
 
-const currentCard = computed<HiraganaCharacter>(() =>
-  cards.value[currentIndex.value] ?? hiraganaData[0]!,
+const currentCard = computed<FlashcardItem>(() =>
+  cards.value[currentIndex.value] ?? { ...hiraganaData[0]!, isReview: false },
 )
 const progress = computed(() => ((currentIndex.value + 1) / cards.value.length) * 100)
 const normalizedAnswer = computed(() => answer.value.trim().toLowerCase())
@@ -28,18 +32,23 @@ const rangeOptions: { value: CardRange; label: string; sub: string }[] = [
   { value: 'last16', label: '16 chữ cuối', sub: 'ま - ん' },
 ]
 
-function getRangeCards(range: CardRange): HiraganaCharacter[] {
+function getRangeCards(range: CardRange): FlashcardItem[] {
+  let rangeData: HiraganaCharacter[]
   switch (range) {
     case 'first15':
-      return hiraganaData.slice(0, 15)
+      rangeData = hiraganaData.slice(0, 15)
+      break
     case 'mid15':
-      return hiraganaData.slice(15, 30)
+      rangeData = hiraganaData.slice(15, 30)
+      break
     case 'last16':
-      return hiraganaData.slice(30, 46)
+      rangeData = hiraganaData.slice(30, 46)
+      break
     case 'all':
     default:
-      return hiraganaData
+      rangeData = hiraganaData
   }
+  return rangeData.map(item => ({ ...item, isReview: false }))
 }
 
 function resetCard() {
@@ -56,12 +65,18 @@ function flipCard() {
 function checkAnswer() {
   if (!normalizedAnswer.value || answerState.value !== 'idle') return
 
-  checkedCount.value += 1
   if (normalizedAnswer.value === currentCard.value.romaji.toLowerCase()) {
     answerState.value = 'correct'
-    correctCount.value += 1
+    if (!currentCard.value.isReview) {
+      checkedCount.value += 1
+      correctCount.value += 1
+    }
   } else {
     answerState.value = 'incorrect'
+    if (!currentCard.value.isReview) {
+      checkedCount.value += 1
+    }
+    scheduleReview(currentCard.value)
   }
 }
 
@@ -72,11 +87,30 @@ function goToCard(index: number) {
 }
 
 function nextCard() {
+  if (currentCard.value.isReview && answerState.value !== 'idle') {
+    cards.value.splice(currentIndex.value, 1)
+    if (currentIndex.value >= cards.value.length) currentIndex.value = 0
+    resetCard()
+    return
+  }
   goToCard(currentIndex.value + 1)
 }
 
 function previousCard() {
+  if (currentCard.value.isReview && answerState.value !== 'idle') {
+    const previousIndex = currentIndex.value - 1
+    cards.value.splice(currentIndex.value, 1)
+    goToCard(previousIndex)
+    return
+  }
   goToCard(currentIndex.value - 1)
+}
+
+function scheduleReview(card: FlashcardItem) {
+  const reviewCard: FlashcardItem = { ...card, isReview: true }
+  // Thẻ ôn lại hiện sau ít nhất 2 thẻ khác; nếu đang ở cuối thì nối ngay sau thẻ hiện tại.
+  const reviewIndex = Math.min(currentIndex.value + 3, cards.value.length)
+  cards.value.splice(reviewIndex, 0, reviewCard)
 }
 
 function changeRange(range: CardRange) {
