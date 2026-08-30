@@ -14,6 +14,7 @@ interface HiraQuestion {
   mode: 'char-to-romaji' | 'romaji-to-char'
   options: string[]
   correct: string
+  isReview: boolean
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -57,13 +58,19 @@ function resolveMode(selected: QuizMode): 'char-to-romaji' | 'romaji-to-char' {
   return selected
 }
 
-function makeQuestion(item: HiraganaCharacter, selected: QuizMode, pool: HiraganaCharacter[]): HiraQuestion {
+function makeQuestion(
+  item: HiraganaCharacter,
+  selected: QuizMode,
+  pool: HiraganaCharacter[],
+  isReview = false,
+): HiraQuestion {
   const mode = resolveMode(selected)
   return {
     item,
     mode,
     options: buildOptions(item, mode, pool),
     correct: mode === 'char-to-romaji' ? item.romaji : item.character,
+    isReview,
   }
 }
 
@@ -105,12 +112,13 @@ const modeOptions: { value: QuizMode; label: string; icon: string }[] = [
 ]
 
 // ── Derived ──────────────────────────────────────────────────────────────────
-const total    = computed(() => quizOrder.value.length)
+const total    = computed(() => quizOrder.value.filter(item => !item.isReview).length)
 const question = computed(() => quizOrder.value[currentIdx.value] ?? null)
 const progress = computed(() => {
   if (isFinished.value) return total.value
-  return answerState.value === 'idle' ? currentIdx.value : currentIdx.value + 1
+  return score.value.correct + score.value.incorrect
 })
+const isLastQuestion = computed(() => currentIdx.value >= quizOrder.value.length - 1)
 const accuracy = computed(() => {
   const done = score.value.correct + score.value.incorrect
   return done === 0 ? 0 : Math.round((score.value.correct / done) * 100)
@@ -150,22 +158,36 @@ function playAudio() {
   speakJapaneseWord(question.value.item.character, question.value.item.romaji)
 }
 
+function scheduleReview(questionToReview: HiraQuestion) {
+  const pool = getRangeData(wordRange.value)
+  const reviewQuestion = makeQuestion(questionToReview.item, questionToReview.mode, pool, true)
+  // Chèn sau 2 lượt khác nếu còn đủ câu; ở cuối hàng đợi thì chèn ngay sau câu hiện tại.
+  const reviewIndex = Math.min(currentIdx.value + 3, quizOrder.value.length)
+  quizOrder.value.splice(reviewIndex, 0, reviewQuestion)
+}
+
 function onSelect(option: string) {
   if (answerState.value !== 'idle' || !question.value) return
+  const currentQuestion = question.value
   selected.value = option
-  if (option === question.value.correct) {
+  if (option === currentQuestion.correct) {
     answerState.value = 'correct'
-    score.value = { ...score.value, correct: score.value.correct + 1 }
+    if (!currentQuestion.isReview) {
+      score.value = { ...score.value, correct: score.value.correct + 1 }
+    }
     // Phát âm chuẩn khi trả lời đúng
     playAudio()
   } else {
     answerState.value = 'incorrect'
-    score.value = { ...score.value, incorrect: score.value.incorrect + 1 }
+    if (!currentQuestion.isReview) {
+      score.value = { ...score.value, incorrect: score.value.incorrect + 1 }
+    }
+    scheduleReview(currentQuestion)
   }
 }
 
 function onNext() {
-  if (currentIdx.value >= total.value - 1) {
+  if (isLastQuestion.value) {
     isFinished.value = true
     return
   }
@@ -383,7 +405,7 @@ startQuiz()
             </div>
             
             <button type="button" class="primary-btn next-action ios-pressable" @click="onNext">
-              <span>{{ currentIdx >= total - 1 ? 'Xem kết quả' : 'Tiếp theo' }}</span>
+              <span>{{ isLastQuestion ? 'Xem kết quả' : 'Tiếp theo' }}</span>
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
               </svg>
