@@ -97,6 +97,7 @@ function checkAnswer() {
     if (!currentCard.value.isCompleted) scheduleReview(currentCard.value)
   }
   currentCard.value.isCompleted = true
+  answerInput.value?.focus({ preventScroll: true })
 }
 
 function goToCard(index: number) {
@@ -247,10 +248,10 @@ onUnmounted(() => {
             v-model="answer"
             type="text"
             inputmode="text"
+            enterkeyhint="next"
             autocomplete="off"
             autocapitalize="none"
             spellcheck="false"
-            :disabled="answerState !== 'idle'"
             :class="{
               'input-correct': answerState === 'correct',
               'input-incorrect': answerState === 'incorrect',
