@@ -7,10 +7,11 @@ type CardRange = 'all' | 'first15' | 'mid15' | 'last16'
 
 interface FlashcardItem extends HiraganaCharacter {
   isReview: boolean
+  isCompleted: boolean
 }
 
 const selectedRange = ref<CardRange>('all')
-const cards = ref<FlashcardItem[]>(hiraganaData.map(item => ({ ...item, isReview: false })))
+const cards = ref<FlashcardItem[]>(hiraganaData.map(item => ({ ...item, isReview: false, isCompleted: false })))
 const currentIndex = ref(0)
 const isFlipped = ref(false)
 const answer = ref('')
@@ -18,11 +19,21 @@ const answerState = ref<AnswerState>('idle')
 const correctCount = ref(0)
 const checkedCount = ref(0)
 const answerInput = ref<HTMLInputElement | null>(null)
+const initialCardCount = ref(hiraganaData.length)
+
+const isFinished = computed(() => currentIndex.value >= cards.value.length)
+const incorrectCount = computed(() => checkedCount.value - correctCount.value)
+const accuracy = computed(() =>
+  checkedCount.value === 0 ? 0 : Math.round((correctCount.value / checkedCount.value) * 100),
+)
 
 const currentCard = computed<FlashcardItem>(() =>
-  cards.value[currentIndex.value] ?? { ...hiraganaData[0]!, isReview: false },
+  cards.value[currentIndex.value] ?? { ...hiraganaData[0]!, isReview: false, isCompleted: false },
 )
-const progress = computed(() => ((currentIndex.value + 1) / cards.value.length) * 100)
+const progress = computed(() => {
+  if (isFinished.value) return 100
+  return cards.value.length === 0 ? 0 : (currentIndex.value / cards.value.length) * 100
+})
 const normalizedAnswer = computed(() => answer.value.trim().toLowerCase())
 
 const rangeOptions: { value: CardRange; label: string; sub: string }[] = [
@@ -48,7 +59,7 @@ function getRangeCards(range: CardRange): FlashcardItem[] {
     default:
       rangeData = hiraganaData
   }
-  return rangeData.map(item => ({ ...item, isReview: false }))
+  return rangeData.map(item => ({ ...item, isReview: false, isCompleted: false }))
 }
 
 function resetCard() {
@@ -63,77 +74,72 @@ function flipCard() {
 }
 
 function checkAnswer() {
-  if (!normalizedAnswer.value || answerState.value !== 'idle') return
+  if (isFinished.value || !normalizedAnswer.value || answerState.value !== 'idle') return
 
   if (normalizedAnswer.value === currentCard.value.romaji.toLowerCase()) {
     answerState.value = 'correct'
-    if (!currentCard.value.isReview) {
+    if (!currentCard.value.isReview && !currentCard.value.isCompleted) {
       checkedCount.value += 1
       correctCount.value += 1
     }
   } else {
     answerState.value = 'incorrect'
-    if (!currentCard.value.isReview) {
+    if (!currentCard.value.isReview && !currentCard.value.isCompleted) {
       checkedCount.value += 1
     }
-    scheduleReview(currentCard.value)
+    if (!currentCard.value.isCompleted) scheduleReview(currentCard.value)
   }
+  currentCard.value.isCompleted = true
 }
 
 function goToCard(index: number) {
-  const total = cards.value.length
-  currentIndex.value = (index + total) % total
+  currentIndex.value = Math.max(0, Math.min(index, cards.value.length))
   resetCard()
 }
 
 function nextCard() {
-  if (currentCard.value.isReview && answerState.value !== 'idle') {
-    cards.value.splice(currentIndex.value, 1)
-    if (currentIndex.value >= cards.value.length) currentIndex.value = 0
-    resetCard()
-    return
-  }
+  if (isFinished.value || answerState.value === 'idle') return
   goToCard(currentIndex.value + 1)
 }
 
 function previousCard() {
-  if (currentCard.value.isReview && answerState.value !== 'idle') {
-    const previousIndex = currentIndex.value - 1
-    cards.value.splice(currentIndex.value, 1)
-    goToCard(previousIndex)
-    return
-  }
+  if (isFinished.value || currentIndex.value === 0) return
   goToCard(currentIndex.value - 1)
 }
 
 function scheduleReview(card: FlashcardItem) {
-  const reviewCard: FlashcardItem = { ...card, isReview: true }
+  const reviewCard: FlashcardItem = { ...card, isReview: true, isCompleted: false }
   // Thẻ ôn lại hiện sau ít nhất 2 thẻ khác; nếu đang ở cuối thì nối ngay sau thẻ hiện tại.
   const reviewIndex = Math.min(currentIndex.value + 3, cards.value.length)
   cards.value.splice(reviewIndex, 0, reviewCard)
 }
 
-function changeRange(range: CardRange) {
-  if (selectedRange.value === range) return
-  selectedRange.value = range
-  cards.value = [...getRangeCards(range)]
+function startSession(shouldShuffle = false) {
+  const nextCards = getRangeCards(selectedRange.value)
+  if (shouldShuffle) {
+    for (let index = nextCards.length - 1; index > 0; index -= 1) {
+      const randomIndex = Math.floor(Math.random() * (index + 1))
+      const currentItem = nextCards[index]!
+      nextCards[index] = nextCards[randomIndex]!
+      nextCards[randomIndex] = currentItem
+    }
+  }
+  cards.value = nextCards
+  initialCardCount.value = nextCards.length
   currentIndex.value = 0
   correctCount.value = 0
   checkedCount.value = 0
   resetCard()
 }
 
+function changeRange(range: CardRange) {
+  if (selectedRange.value === range) return
+  selectedRange.value = range
+  startSession()
+}
+
 function shuffleCards() {
-  const shuffled = [...cards.value]
-  for (let index = shuffled.length - 1; index > 0; index -= 1) {
-    const randomIndex = Math.floor(Math.random() * (index + 1))
-    const currentItem = shuffled[index]!
-    shuffled[index] = shuffled[randomIndex]!
-    shuffled[randomIndex] = currentItem
-  }
-  cards.value = shuffled
-  currentIndex.value = 0
-  resetCard()
+  startSession(true)
 }
 </script>
 
@@ -171,7 +177,8 @@ function shuffleCards() {
 
     <section class="progress-section" aria-label="Tiến độ học">
       <div class="progress-copy">
-        <span>Thẻ {{ currentIndex + 1 }} / {{ cards.length }}</span>
+        <span v-if="!isFinished">Thẻ {{ currentIndex + 1 }} / {{ cards.length }}</span>
+        <span v-else>Đã hoàn thành</span>
         <span>Đúng {{ correctCount }} / {{ checkedCount }}</span>
       </div>
       <div class="progress-track">
@@ -179,7 +186,7 @@ function shuffleCards() {
       </div>
     </section>
 
-    <section class="study-area">
+    <section v-if="!isFinished" class="study-area">
       <div class="instruction">
         <span class="instruction-icon">✦</span>
         <div>
@@ -238,7 +245,7 @@ function shuffleCards() {
             Kiểm tra
           </button>
           <button v-else type="button" class="next-button ios-pressable" @click="nextCard">
-            Tiếp theo →
+            {{ currentIndex >= cards.length - 1 ? 'Xem kết quả' : 'Tiếp theo →' }}
           </button>
         </div>
 
@@ -254,9 +261,23 @@ function shuffleCards() {
       </form>
     </section>
 
-    <nav class="card-navigation" aria-label="Điều hướng flashcard">
-      <button type="button" class="nav-button ios-pressable" @click="previousCard">← Thẻ trước</button>
-      <button type="button" class="nav-button nav-primary ios-pressable" @click="nextCard">Thẻ sau →</button>
+    <section v-else class="result-box ios-card" aria-live="polite">
+      <div class="result-icon" aria-hidden="true">{{ accuracy >= 80 ? '🏆' : accuracy >= 50 ? '🌟' : '💪' }}</div>
+      <h1>Hoàn thành!</h1>
+      <p>Bạn đã học xong {{ initialCardCount }} chữ Hiragana và nhập lại tất cả các chữ trả lời sai.</p>
+      <div class="result-stats">
+        <div><strong>{{ correctCount }}</strong><span>Đúng lần đầu</span></div>
+        <div><strong>{{ incorrectCount }}</strong><span>Sai lần đầu</span></div>
+        <div><strong>{{ accuracy }}%</strong><span>Chính xác</span></div>
+      </div>
+      <button type="button" class="restart-button ios-pressable" @click="startSession()">Học lại</button>
+    </section>
+
+    <nav v-if="!isFinished" class="card-navigation" aria-label="Điều hướng flashcard">
+      <button type="button" class="nav-button ios-pressable" :disabled="currentIndex === 0" @click="previousCard">← Thẻ trước</button>
+      <button type="button" class="nav-button nav-primary ios-pressable" :disabled="answerState === 'idle'" @click="nextCard">
+        {{ currentIndex >= cards.length - 1 ? 'Xem kết quả' : 'Thẻ sau →' }}
+      </button>
     </nav>
   </main>
 </template>
@@ -661,6 +682,63 @@ function shuffleCards() {
   border-color: #e9d5ff;
   background: #faf5ff;
   color: #7e22ce;
+}
+
+.nav-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.result-box {
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+
+.result-icon { font-size: 3.25rem; }
+
+.result-box h1 {
+  margin: 0.6rem 0 0.35rem;
+  color: #581c87;
+  font-size: 1.65rem;
+}
+
+.result-box > p {
+  margin: 0 auto 1.4rem;
+  max-width: 360px;
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.result-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.55rem;
+  margin-bottom: 1.35rem;
+}
+
+.result-stats div {
+  padding: 0.75rem 0.25rem;
+  border-radius: 14px;
+  background: #faf5ff;
+}
+
+.result-stats strong,
+.result-stats span { display: block; }
+.result-stats strong { color: #7e22ce; font-size: 1.2rem; }
+.result-stats span { margin-top: 0.2rem; color: #64748b; font-size: 0.65rem; font-weight: 700; }
+
+.restart-button {
+  min-height: 46px;
+  padding: 0 1.5rem;
+  border: 0;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #7e22ce, #a855f7);
+  color: white;
+  font-family: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 5px 14px rgba(126, 34, 206, 0.27);
 }
 
 @media (max-height: 720px) {
