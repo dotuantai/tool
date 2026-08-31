@@ -11,6 +11,7 @@ interface FlashcardItem extends HiraganaCharacter {
 }
 
 const selectedRange = ref<CardRange>('all')
+const isShuffleEnabled = ref(false)
 const cards = ref<FlashcardItem[]>(hiraganaData.map(item => ({ ...item, isReview: false, isCompleted: false })))
 const currentIndex = ref(0)
 const isFlipped = ref(false)
@@ -114,7 +115,7 @@ function scheduleReview(card: FlashcardItem) {
   cards.value.splice(reviewIndex, 0, reviewCard)
 }
 
-function startSession(shouldShuffle = false) {
+function startSession(shouldShuffle = isShuffleEnabled.value) {
   const nextCards = getRangeCards(selectedRange.value)
   if (shouldShuffle) {
     for (let index = nextCards.length - 1; index > 0; index -= 1) {
@@ -139,7 +140,8 @@ function changeRange(range: CardRange) {
 }
 
 function shuffleCards() {
-  startSession(true)
+  isShuffleEnabled.value = !isShuffleEnabled.value
+  startSession()
 }
 </script>
 
@@ -156,8 +158,16 @@ function shuffleCards() {
         <span>Hiragana Flashcard</span>
       </div>
 
-      <button type="button" class="shuffle-button ios-pressable" aria-label="Xáo trộn flashcard" @click="shuffleCards">
-        ↝
+      <button
+        type="button"
+        class="shuffle-button ios-pressable"
+        :class="{ 'shuffle-active': isShuffleEnabled }"
+        :aria-label="isShuffleEnabled ? 'Tắt xáo trộn flashcard' : 'Bật xáo trộn flashcard'"
+        :aria-pressed="isShuffleEnabled"
+        :title="isShuffleEnabled ? 'Đang bật xáo trộn' : 'Đang tắt xáo trộn'"
+        @click="shuffleCards"
+      >
+        <span aria-hidden="true">↝</span>
       </button>
     </header>
 
@@ -322,12 +332,42 @@ function shuffleCards() {
 }
 
 .shuffle-button {
+  position: relative;
   width: 40px;
   border-radius: 50%;
   font-family: inherit;
   font-size: 1.25rem;
   font-weight: 900;
   cursor: pointer;
+  transition: color 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.shuffle-button span {
+  display: inline-block;
+  transition: transform 220ms ease;
+}
+
+.shuffle-button.shuffle-active {
+  border-color: #7e22ce;
+  background: linear-gradient(145deg, #7e22ce, #a855f7);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(126, 34, 206, 0.35);
+}
+
+.shuffle-button.shuffle-active span {
+  transform: rotate(180deg);
+}
+
+.shuffle-button.shuffle-active::after {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #22c55e;
+  content: '';
 }
 
 .title-badge {
@@ -759,6 +799,8 @@ function shuffleCards() {
 
 @media (prefers-reduced-motion: reduce) {
   .card-inner,
-  .progress-fill { transition: none; }
+  .progress-fill,
+  .shuffle-button,
+  .shuffle-button span { transition: none; }
 }
 </style>
