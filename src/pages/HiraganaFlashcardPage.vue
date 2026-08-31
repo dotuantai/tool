@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onUnmounted, ref } from 'vue'
 import { hiraganaData, type HiraganaCharacter } from '@/data/hiragana'
 
 type AnswerState = 'idle' | 'correct' | 'incorrect'
@@ -21,6 +21,7 @@ const correctCount = ref(0)
 const checkedCount = ref(0)
 const answerInput = ref<HTMLInputElement | null>(null)
 const initialCardCount = ref(hiraganaData.length)
+let autoAdvanceTimer: ReturnType<typeof setTimeout> | undefined
 
 const isFinished = computed(() => currentIndex.value >= cards.value.length)
 const incorrectCount = computed(() => checkedCount.value - correctCount.value)
@@ -64,6 +65,10 @@ function getRangeCards(range: CardRange): FlashcardItem[] {
 }
 
 function resetCard() {
+  if (autoAdvanceTimer !== undefined) {
+    clearTimeout(autoAdvanceTimer)
+    autoAdvanceTimer = undefined
+  }
   isFlipped.value = false
   answer.value = ''
   answerState.value = 'idle'
@@ -83,6 +88,7 @@ function checkAnswer() {
       checkedCount.value += 1
       correctCount.value += 1
     }
+    autoAdvanceTimer = setTimeout(() => nextCard(), 500)
   } else {
     answerState.value = 'incorrect'
     if (!currentCard.value.isReview && !currentCard.value.isCompleted) {
@@ -143,6 +149,10 @@ function shuffleCards() {
   isShuffleEnabled.value = !isShuffleEnabled.value
   startSession()
 }
+
+onUnmounted(() => {
+  if (autoAdvanceTimer !== undefined) clearTimeout(autoAdvanceTimer)
+})
 </script>
 
 <template>
@@ -254,9 +264,10 @@ function shuffleCards() {
           >
             Kiểm tra
           </button>
-          <button v-else type="button" class="next-button ios-pressable" @click="nextCard">
+          <button v-else-if="answerState === 'incorrect'" type="button" class="next-button ios-pressable" @click="nextCard">
             {{ currentIndex >= cards.length - 1 ? 'Xem kết quả' : 'Tiếp theo →' }}
           </button>
+          <span v-else class="auto-advance-status">Đang chuyển…</span>
         </div>
 
         <div class="feedback" aria-live="polite">
@@ -672,6 +683,14 @@ function shuffleCards() {
 
 .next-button {
   background: linear-gradient(135deg, #059669, #10b981);
+}
+
+.auto-advance-status {
+  align-self: center;
+  color: #047857;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: center;
 }
 
 .feedback {
