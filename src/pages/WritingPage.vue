@@ -131,6 +131,21 @@ onMounted(() => {
     if (savedHira) practicedHiragana.value = new Set(JSON.parse(savedHira))
     const savedKata = localStorage.getItem('lingua_practiced_katakana')
     if (savedKata) practicedKatakana.value = new Set(JSON.parse(savedKata))
+
+    // Handle jump from AlphabetChartPage
+    const targetKanaRaw = sessionStorage.getItem('lingua_target_kana')
+    if (targetKanaRaw) {
+      sessionStorage.removeItem('lingua_target_kana')
+      const parsed = JSON.parse(targetKanaRaw) as { type: AlphabetType; char: string }
+      if (parsed.type === 'katakana' || parsed.type === 'hiragana') {
+        alphabet.value = parsed.type
+        const list = parsed.type === 'katakana' ? katakanaWritingData : hiraganaWritingData
+        const idx = list.findIndex(item => item.character === parsed.char || item.romaji.toLowerCase() === parsed.char.toLowerCase())
+        if (idx !== -1) {
+          currentIdx.value = idx
+        }
+      }
+    }
   } catch (e) {
     // ignore
   }

@@ -16,6 +16,28 @@
 
     <!-- Cards List -->
     <main class="menu-list">
+      <!-- 0. Bảng Chữ Cái Toàn Diện Card -->
+      <a href="#/alphabet" class="mode-item alphabet-theme">
+        <div class="item-left">
+          <div class="icon-avatar alphabet-avatar">
+            <span class="alphabet-chars">あア</span>
+          </div>
+        </div>
+        <div class="item-content">
+          <div class="item-meta">
+            <span class="category-tag alphabet-tag">BẢNG CHỮ CÁI</span>
+            <span class="type-pill">Full Hiragana & Katakana</span>
+          </div>
+          <h2 class="item-title">Bảng Chữ Cái Toàn Diện</h2>
+          <p class="item-desc">Tra cứu 46 chữ cơ bản, âm đục & âm ghép kèm phát âm chuẩn.</p>
+        </div>
+        <div class="item-arrow">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+            <path fill-rule="evenodd" d="M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z" clip-rule="evenodd" />
+          </svg>
+        </div>
+      </a>
+
       <!-- 1. Luyện Viết Chữ Nhật Card -->
       <a href="#/writing" class="mode-item write-theme">
         <div class="item-left">
@@ -64,7 +86,7 @@
       <a href="#/hiragana-flashcards" class="mode-item flashcard-theme">
         <div class="item-left">
           <div class="icon-avatar flashcard-avatar">
-            <span class="flashcard-char">あ</span>
+            <span class="flashcard-icon">🗂️</span>
           </div>
         </div>
         <div class="item-content">
@@ -86,7 +108,7 @@
       <a href="#/japanese-quiz" class="mode-item quiz-theme">
         <div class="item-left">
           <div class="icon-avatar jp-avatar">
-            <span class="jp-kanji">日</span>
+            <span class="jp-kanji">あ</span>
           </div>
         </div>
         <div class="item-content">
@@ -262,6 +284,21 @@
   background: linear-gradient(140deg, #ccfbf1 0%, #a7f3d0 100%);
 }
 
+.alphabet-avatar {
+  background: linear-gradient(140deg, #fef3c7 0%, #fed7aa 100%);
+}
+
+.alphabet-chars {
+  font-family: 'M PLUS Rounded 1c', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #d97706, #ea580c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.05em;
+}
+
 .write-icon {
   font-size: 1.75rem;
 }
@@ -296,6 +333,11 @@
   color: #0e7490;
 }
 
+.flashcard-icon {
+  font-size: 1.85rem;
+  display: inline-block;
+}
+
 .flashcard-char {
   font-family: 'M PLUS Rounded 1c', sans-serif;
   font-size: 2rem;
@@ -322,6 +364,11 @@
   letter-spacing: 0.06em;
   padding: 0.15rem 0.45rem;
   border-radius: 6px;
+}
+
+.alphabet-tag {
+  background: #fef3c7;
+  color: #b45309;
 }
 
 .write-tag {
@@ -399,6 +446,7 @@
 }
 
 /* Specific theme highlights on active */
+.alphabet-theme:active { border-color: #f59e0b; }
 .write-theme:active { border-color: #5eead4; }
 .english-theme:active { border-color: #93c5fd; }
 .quiz-theme:active { border-color: #d8b4fe; }
