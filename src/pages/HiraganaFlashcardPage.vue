@@ -80,7 +80,15 @@ function flipCard() {
 }
 
 function checkAnswer() {
-  if (isFinished.value || !normalizedAnswer.value || answerState.value !== 'idle') return
+  if (isFinished.value) return
+
+  // Nếu đang ở trạng thái sai, Enter sẽ qua thẻ tiếp theo
+  if (answerState.value === 'incorrect') {
+    nextCard()
+    return
+  }
+
+  if (!normalizedAnswer.value || answerState.value !== 'idle') return
 
   if (normalizedAnswer.value === currentCard.value.romaji.toLowerCase()) {
     answerState.value = 'correct'
@@ -256,6 +264,7 @@ onUnmounted(() => {
               'input-correct': answerState === 'correct',
               'input-incorrect': answerState === 'incorrect',
             }"
+            @keydown.enter.prevent="checkAnswer"
           />
           <button
             v-if="answerState === 'idle'"

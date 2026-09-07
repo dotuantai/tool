@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { katakanaData, type KatakanaCharacter } from '@/data/katakana'
 import { speakJapaneseWord } from '@/utils/speakJapanese'
 
@@ -173,6 +173,28 @@ function onNext() {
   selected.value    = null
   cardKey.value++
 }
+
+
+function handleKeydown(e: KeyboardEvent) {
+  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+
+  // Phím 1–4: chọn đáp án
+  if (['1', '2', '3', '4'].includes(e.key) && answerState.value === 'idle' && question.value) {
+    const idx = parseInt(e.key) - 1
+    const opt = question.value.options[idx]
+    if (opt !== undefined) onSelect(opt)
+    return
+  }
+
+  // Enter hoặc Space: qua câu tiếp theo
+  if ((e.key === 'Enter' || e.key === ' ') && answerState.value !== 'idle') {
+    e.preventDefault()
+    onNext()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', handleKeydown))
+onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 
 startQuiz()
 </script>
@@ -350,7 +372,7 @@ startQuiz()
         <!-- 4 Options Grid (2x2 touch optimized) -->
         <div class="options-container">
           <button
-            v-for="opt in question.options"
+            v-for="(opt, idx) in question.options"
             :key="opt"
             type="button"
             class="choice-btn ios-pressable"
@@ -363,6 +385,7 @@ startQuiz()
             :disabled="answerState !== 'idle'"
             @click="onSelect(opt)"
           >
+            <span class="choice-key-badge">{{ idx + 1 }}</span>
             {{ opt }}
           </button>
         </div>
@@ -791,6 +814,36 @@ startQuiz()
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02);
+  position: relative;
+}
+
+.choice-key-badge {
+  position: absolute;
+  top: 5px;
+  left: 7px;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: #e0e7ff;
+  color: #4338ca;
+  font-size: 0.6rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  letter-spacing: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.choice-correct .choice-key-badge {
+  background: #bbf7d0;
+  color: #047857;
+}
+
+.choice-wrong .choice-key-badge {
+  background: #fecdd3;
+  color: #be123c;
 }
 
 .choice-kana {
