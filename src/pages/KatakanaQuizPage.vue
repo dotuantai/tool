@@ -80,11 +80,12 @@ const wordOrder   = ref<WordOrder>('ordered')
 
 const quizOrder   = ref<KataQuestion[]>([])
 const currentIdx  = ref(0)
-const answerState = ref<AnswerState>('idle')
-const selected    = ref<string | null>(null)
-const score       = ref({ correct: 0, incorrect: 0 })
-const isFinished  = ref(false)
-const cardKey     = ref(0)
+const answerState  = ref<AnswerState>('idle')
+const selected     = ref<string | null>(null)
+const wrongPicks   = ref<Set<string>>(new Set()) // đáp án sai đã chọn trong câu này
+const score        = ref({ correct: 0, incorrect: 0 })
+const isFinished   = ref(false)
+const cardKey      = ref(0)
 
 const rangeOptions: { value: WordRange; label: string; sub: string }[] = [
   { value: 'all',     label: 'Tất cả 46', sub: 'ア - ン' },
@@ -122,6 +123,7 @@ function startQuiz() {
   currentIdx.value  = 0
   answerState.value = 'idle'
   selected.value    = null
+  wrongPicks.value  = new Set()
   score.value       = { correct: 0, incorrect: 0 }
   isFinished.value  = false
   cardKey.value     = 0
@@ -151,15 +153,26 @@ function playAudio() {
 }
 
 function onSelect(option: string) {
-  if (answerState.value !== 'idle' || !question.value) return
+  if (!question.value) return
+  // Không cho chọn lại đáp án đã sai hoặc nếu đã đúng rồi
+  if (answerState.value === 'correct') return
+  if (wrongPicks.value.has(option)) return
+
   selected.value = option
+
   if (option === question.value.correct) {
+    // Đúng rồi: tính điểm dựa trên lần đầu có sai không
+    if (wrongPicks.value.size === 0) {
+      score.value = { ...score.value, correct: score.value.correct + 1 }
+    } else {
+      score.value = { ...score.value, incorrect: score.value.incorrect + 1 }
+    }
     answerState.value = 'correct'
-    score.value = { ...score.value, correct: score.value.correct + 1 }
     playAudio()
   } else {
+    // Sai: thêm vào danh sách sai, vẫn cho chọn lại
+    wrongPicks.value = new Set([...wrongPicks.value, option])
     answerState.value = 'incorrect'
-    score.value = { ...score.value, incorrect: score.value.incorrect + 1 }
   }
 }
 
@@ -171,6 +184,7 @@ function onNext() {
   currentIdx.value++
   answerState.value = 'idle'
   selected.value    = null
+  wrongPicks.value  = new Set()
   cardKey.value++
 }
 
@@ -178,16 +192,16 @@ function onNext() {
 function handleKeydown(e: KeyboardEvent) {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
 
-  // Phím 1–4: chọn đáp án
-  if (['1', '2', '3', '4'].includes(e.key) && answerState.value === 'idle' && question.value) {
+  // Phím 1–4: chọn đáp án (chỉ khi chưa đúng và option đó chưa bị sai)
+  if (['1', '2', '3', '4'].includes(e.key) && answerState.value !== 'correct' && question.value) {
     const idx = parseInt(e.key) - 1
     const opt = question.value.options[idx]
-    if (opt !== undefined) onSelect(opt)
+    if (opt !== undefined && !wrongPicks.value.has(opt)) onSelect(opt)
     return
   }
 
-  // Enter hoặc Space: qua câu tiếp theo
-  if ((e.key === 'Enter' || e.key === ' ') && answerState.value !== 'idle') {
+  // Enter hoặc Space: qua câu tiếp theo (chỉ khi đã đúng)
+  if ((e.key === 'Enter' || e.key === ' ') && answerState.value === 'correct') {
     e.preventDefault()
     onNext()
   }
@@ -377,12 +391,12 @@ startQuiz()
             type="button"
             class="choice-btn ios-pressable"
             :class="{
-              'choice-correct':  answerState !== 'idle' && opt === question.correct,
-              'choice-wrong':    answerState !== 'idle' && opt === selected && opt !== question.correct,
-              'choice-dimmed':   answerState !== 'idle' && opt !== selected && opt !== question.correct,
+              'choice-correct':  opt === question.correct && answerState === 'correct',
+              'choice-wrong':    wrongPicks.has(opt),
+              'choice-dimmed':   answerState === 'correct' && opt !== question.correct && !wrongPicks.has(opt),
               'choice-kana':     question.mode === 'romaji-to-char',
             }"
-            :disabled="answerState !== 'idle'"
+            :disabled="wrongPicks.has(opt) || answerState === 'correct'"
             @click="onSelect(opt)"
           >
             <span class="choice-key-badge">{{ idx + 1 }}</span>
@@ -392,24 +406,36 @@ startQuiz()
 
         <!-- Bottom Feedback Floating Bar -->
         <Transition name="feedback">
-          <div v-if="answerState !== 'idle'" class="feedback-panel">
-            <div class="feedback-status">
-              <span v-if="answerState === 'correct'" class="status-icon-correct">✓</span>
-              <span v-else class="status-icon-wrong">✕</span>
+          <div
+            v-if="answerState !== 'idle'"
+            class="feedback-panel"
+            :class="{ 'feedback-panel-wrong': answerState === 'incorrect' }"
+          >
+            <!-- Sai: gợi ý chọn lại -->
+            <div v-if="answerState === 'incorrect'" class="feedback-status">
+              <span class="status-icon-wrong">✕</span>
               <div class="status-text">
-                <p v-if="answerState === 'correct'" class="status-title correct-title">Chính xác!</p>
-                <p v-else class="status-title wrong-title">
-                  Đáp án đúng: <span class="highlight-ans">{{ question.correct }}</span>
-                </p>
+                <p class="status-title wrong-title">Sai rồi! Hãy chọn lại 👇</p>
               </div>
             </div>
-            
-            <button type="button" class="primary-btn next-action ios-pressable" @click="onNext">
-              <span>{{ currentIdx >= total - 1 ? 'Xem kết quả' : 'Tiếp theo' }}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-              </svg>
-            </button>
+
+            <!-- Đúng: hiện chính xác + nút Tiếp theo -->
+            <template v-else-if="answerState === 'correct'">
+              <div class="feedback-status">
+                <span class="status-icon-correct">✓</span>
+                <div class="status-text">
+                  <p class="status-title correct-title">Chính xác!</p>
+                  <p v-if="wrongPicks.size > 0" class="status-subtitle">Bạn đã thử {{ wrongPicks.size }} lần sai</p>
+                </div>
+              </div>
+
+              <button type="button" class="primary-btn next-action ios-pressable" @click="onNext">
+                <span>{{ currentIdx >= total - 1 ? 'Xem kết quả' : 'Tiếp theo' }}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                </svg>
+              </button>
+            </template>
           </div>
         </Transition>
       </div>
@@ -934,6 +960,20 @@ startQuiz()
 
 .correct-title { color: #15803d; }
 .wrong-title   { color: #dc2626; }
+
+.status-subtitle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  margin: 0.1rem 0 0;
+  line-height: 1.2;
+}
+
+/* Compact panel khi sai - không có nút Next, nhỏ hơn */
+.feedback-panel-wrong {
+  padding: 0.9rem 1.25rem calc(var(--sab, env(safe-area-inset-bottom)) + 0.9rem);
+  gap: 0;
+}
 
 .highlight-ans {
   font-family: 'M PLUS Rounded 1c', sans-serif;
